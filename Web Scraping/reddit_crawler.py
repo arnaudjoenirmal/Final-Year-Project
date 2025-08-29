@@ -10,7 +10,7 @@ reddit = praw.Reddit(
     user_agent="tamil-depression-research/0.1 by YOUR_REDDIT_USERNAME"
 )
 
-#Example: Specific post URL
+# Specific post URL
 url = input("Enter the url: ")
 # url = "https://www.reddit.com/r/Chennai/comments/y3lgd8/why_is_depression_becoming_common"
 
@@ -39,7 +39,7 @@ post_data = {
 }
 
 #Fetch all comments
-submission.comments.replace_more(limit=0)  # expands "load more"
+submission.comments.replace_more(limit=0)
 comments = []
 for c in submission.comments.list():
     comments.append({

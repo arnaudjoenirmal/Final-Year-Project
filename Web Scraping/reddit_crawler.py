@@ -3,21 +3,21 @@ import pandas as pd
 import time
 import re  # Added for filename cleaning
 
-# 🔹 Step 1: Authenticate
+#Step 1: Authenticate
 reddit = praw.Reddit(
     client_id="Tk5EVhPSfPH-CYzQbmL4fA",
     client_secret="OeF5E36_-dNKh7nrMCxHS66Il0yTzA",
     user_agent="tamil-depression-research/0.1 by YOUR_REDDIT_USERNAME"
 )
 
-# 🔹 Example: Specific post URL
+#Example: Specific post URL
 url = input("Enter the url: ")
 # url = "https://www.reddit.com/r/Chennai/comments/y3lgd8/why_is_depression_becoming_common"
 
 # Fetch submission
 submission = reddit.submission(url=url)
 
-# 🔹 Clean title for filename
+#Clean title for filename
 def clean_filename(text, maxlen=50):
     # keep only alphanumeric + underscores
     safe = re.sub(r'[^A-Za-z0-9]+', '_', text)
@@ -38,7 +38,7 @@ post_data = {
     "url": f"https://www.reddit.com{submission.permalink}"
 }
 
-# 🔹 Fetch all comments
+#Fetch all comments
 submission.comments.replace_more(limit=0)  # expands "load more"
 comments = []
 for c in submission.comments.list():
@@ -46,8 +46,8 @@ for c in submission.comments.list():
         "body": c.body
     })
 
-# 🔹 Save with filenames based on title
+#Save with filenames based on title
 pd.DataFrame([post_data]).to_csv(f"{fname_base}_post.csv", index=False)
 pd.DataFrame(comments).to_csv(f"{fname_base}_comments.csv", index=False)
 
-print(f"✅ Saved files: {fname_base}_post.csv and {fname_base}_comments.csv")
+print(f"Saved files: {fname_base}_post.csv and {fname_base}_comments.csv")

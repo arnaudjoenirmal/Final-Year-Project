@@ -4,7 +4,7 @@ import Prism from '../components/Prism'
 import Intro from './Intro'
 import LoginRegisterForm from './LoginRegisterForm'
 
-function Login() {
+function Login({ setIsAuthenticated }: { setIsAuthenticated: (auth: boolean) => void }) {
   const [showForm, setShowForm] = useState(false);
 
   return (
@@ -42,7 +42,7 @@ function Login() {
         justifyContent: 'center',
       }}>
         {!showForm && <Intro onFadeOut={() => setShowForm(true)} />}
-        {showForm && <LoginRegisterForm />}
+        {showForm && <LoginRegisterForm setIsAuthenticated={setIsAuthenticated} />}
       </div>
     </div>
   )

@@ -1,12 +1,31 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import AnimatedContent from '../components/AnimatedContent'
 import ShinyText from '../components/ShinyText'
 
-function LoginRegisterForm() {
+function LoginRegisterForm({ setIsAuthenticated }: { setIsAuthenticated?: (auth: boolean) => void }) {
   const [tab, setTab] = useState<'login' | 'register'>('login')
   const [showPassword, setShowPassword] = useState(false)
+  const [loginEmail, setLoginEmail] = useState('')
+  const [loginPassword, setLoginPassword] = useState('')
+  const navigate = useNavigate()
 
   const dark = "#060010"
+
+  // Add button styles for better effect and pointer cursor
+  const buttonStyle = {
+    background: dark,
+    color: 'white',
+    fontWeight: 'bold',
+    marginTop: '0.5rem',
+    transition: 'transform 0.1s, box-shadow 0.1s',
+    cursor: 'pointer',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+  };
+  const buttonHoverStyle = {
+    transform: 'scale(1.04)',
+    boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
+  };
 
   return (
     <AnimatedContent
@@ -49,12 +68,14 @@ function LoginRegisterForm() {
         </div>
         {tab === 'login' ? (
           <>
-            <input className="w-full mb-3 px-4 py-2 rounded border border-[#060010] focus:outline-none bg-white/60 text-black" type="email" placeholder="Email Address" />
+            <input className="w-full mb-3 px-4 py-2 rounded border border-[#060010] focus:outline-none bg-white/60 text-black" type="email" placeholder="Email Address" value={loginEmail} onChange={e => setLoginEmail(e.target.value)} />
             <div className="relative w-full mb-3">
               <input
                 className="w-full px-4 py-2 rounded border border-[#060010] focus:outline-none bg-white/60 text-black"
                 type={showPassword ? "text" : "password"}
                 placeholder="Password"
+                value={loginPassword}
+                onChange={e => setLoginPassword(e.target.value)}
               />
               <span
                 className="absolute right-3 top-3 text-black cursor-pointer"
@@ -71,19 +92,32 @@ function LoginRegisterForm() {
               </label>
               <span style={{ color: dark }} className="cursor-pointer">Forgot Password?</span>
             </div>
-            <button className="w-full py-2 rounded flex items-center justify-center" style={{ background: dark, color: 'white', fontWeight: 'bold', marginTop: '0.5rem' }}>
+            <button
+              className="w-full py-2 rounded flex items-center justify-center"
+              style={buttonStyle}
+              onMouseDown={e => e.currentTarget.style.transform = 'scale(0.97)'}
+              onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
+              onMouseEnter={e => { e.currentTarget.style.transform = buttonHoverStyle.transform; e.currentTarget.style.boxShadow = buttonHoverStyle.boxShadow; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = buttonStyle.boxShadow; }}
+              onClick={() => {
+                if (loginEmail === 'admin@gmail.com' && loginPassword === '1234') {
+                  localStorage.setItem('isAuthenticated', 'true');
+                  setIsAuthenticated?.(true);
+                  navigate('/home');
+                } else {
+                  alert('Invalid credentials');
+                }
+              }}
+            >
               <ShinyText text="LOGIN" speed={2} className="text-lg" />
             </button>
             <div className="mt-4 text-center text-sm" style={{ color: dark }}>
               Don't have an account? <span className="cursor-pointer" style={{ color: dark, textDecoration: 'underline' }} onClick={() => setTab('register')}>Register</span>
             </div>
-            <div className="mt-2 text-xs flex justify-between w-full" style={{ color: dark }}>
-              <span>Terms of Service</span>
-              <span>Privacy Policy</span>
-            </div>
           </>
         ) : (
           <>
+            <input className="w-full mb-3 px-4 py-2 rounded border border-gray-300 focus:outline-none bg-white/60 text-black" type="text" placeholder="Name" />
             <input className="w-full mb-3 px-4 py-2 rounded border border-gray-300 focus:outline-none bg-white/60 text-black" type="email" placeholder="Email Address" />
             <div className="relative w-full mb-3">
               <input
@@ -99,15 +133,18 @@ function LoginRegisterForm() {
                 {showPassword ? "🙈" : "👁️"}
               </span>
             </div>
-            <button className="w-full py-2 rounded flex items-center justify-center" style={{ background: dark, color: 'white', fontWeight: 'bold', marginTop: '0.5rem' }}>
+            <button
+              className="w-full py-2 rounded flex items-center justify-center"
+              style={buttonStyle}
+              onMouseDown={e => e.currentTarget.style.transform = 'scale(0.97)'}
+              onMouseUp={e => e.currentTarget.style.transform = 'scale(1)'}
+              onMouseEnter={e => { e.currentTarget.style.transform = buttonHoverStyle.transform; e.currentTarget.style.boxShadow = buttonHoverStyle.boxShadow; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = buttonStyle.boxShadow; }}
+            >
               <ShinyText text="REGISTER" speed={2} className="text-lg" />
             </button>
             <div className="mt-4 text-center text-sm" style={{ color: dark }}>
               Already have an account? <span className="cursor-pointer" style={{ color: dark, textDecoration: 'underline' }} onClick={() => setTab('login')}>Login</span>
-            </div>
-            <div className="mt-2 text-xs flex justify-between w-full" style={{ color: dark }}>
-              <span>Terms of Service</span>
-              <span>Privacy Policy</span>
             </div>
           </>
         )}

@@ -1,28 +1,27 @@
 import './App.css'
+import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { useEffect, useState } from 'react'
 import Login from './Login/Login'
 import Home from './Home/Home'
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    return localStorage.getItem('isAuthenticated') === 'true';
-  });
-
-  useEffect(() => {
-    const handleStorage = () => {
-      setIsAuthenticated(localStorage.getItem('isAuthenticated') === 'true');
-    };
-    window.addEventListener('storage', handleStorage);
-    return () => window.removeEventListener('storage', handleStorage);
-  }, []);
+  // Protected route wrapper
+  const ProtectedRoute = ({ children }: { children: React.ReactElement }) => {
+    const isAuthenticated = sessionStorage.getItem('isAuthenticated') === 'true';
+    return isAuthenticated ? children : <Navigate to="/login" replace />;
+  };
 
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/login" element={<Login setIsAuthenticated={setIsAuthenticated} />} />
-        <Route path="/" element={<Navigate to="/login" replace />} />
-        <Route path="/home" element={isAuthenticated ? <Home setIsAuthenticated={setIsAuthenticated} /> : <Navigate to="/login" replace />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/home" element={
+          <ProtectedRoute>
+            <Home />
+          </ProtectedRoute>
+        } />
+        {/* Add other protected routes here as needed */}
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>
   )

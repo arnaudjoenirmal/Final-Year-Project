@@ -1,8 +1,20 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
+import './LoginRegisterForm.css';
 import AnimatedContent from '../components/AnimatedContent'
 import ShinyText from '../components/ShinyText'
 
 function LoginRegisterForm() {
+  const loginBtnRef = useRef<HTMLButtonElement>(null!);
+  const registerBtnRef = useRef<HTMLButtonElement>(null!);
+
+  const animateClick = (ref: React.RefObject<HTMLButtonElement>) => {
+    if (ref.current) {
+      ref.current.classList.add('btn-clicked');
+      setTimeout(() => {
+        ref.current && ref.current.classList.remove('btn-clicked');
+      }, 200);
+    }
+  };
   const [tab, setTab] = useState<'login' | 'register'>('login')
   const [showPassword, setShowPassword] = useState(false)
   const [email, setEmail] = useState('');
@@ -97,9 +109,11 @@ function LoginRegisterForm() {
               </div>
               <button
                 type="submit"
-                className="w-full py-2 rounded flex items-center justify-center"
+                className="w-full py-2 rounded flex items-center justify-center btn-animate"
                 style={{ background: dark, color: 'white', fontWeight: 'bold', marginTop: '0.5rem', cursor: 'pointer' }}
                 onMouseOver={e => (e.currentTarget.style.cursor = 'pointer')}
+                ref={loginBtnRef}
+                onClick={() => animateClick(loginBtnRef)}
               >
                 <ShinyText text="LOGIN" speed={2} className="text-lg" />
               </button>
@@ -131,7 +145,12 @@ function LoginRegisterForm() {
                 {showPassword ? "🙈" : "👁️"}
               </span>
             </div>
-            <button className="w-full py-2 rounded flex items-center justify-center" style={{ background: dark, color: 'white', fontWeight: 'bold', marginTop: '0.5rem' }}>
+            <button
+              className="w-full py-2 rounded flex items-center justify-center btn-animate"
+              style={{ background: dark, color: 'white', fontWeight: 'bold', marginTop: '0.5rem' }}
+              ref={registerBtnRef}
+              onClick={() => animateClick(registerBtnRef)}
+            >
               <ShinyText text="REGISTER" speed={2} className="text-lg" />
             </button>
             <div className="mt-4 text-center text-sm" style={{ color: dark }}>

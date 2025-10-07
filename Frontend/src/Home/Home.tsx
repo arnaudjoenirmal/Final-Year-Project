@@ -1,5 +1,5 @@
 import React from 'react';
-import Aurora from '../components/Aurora';
+import PrismaticBurst from '../components/PrismaticBurst';
 import StaggeredMenu from '../components/StaggeredMenu';
 import { useNavigate } from 'react-router-dom';
 
@@ -39,12 +39,19 @@ const Home: React.FC<{ setIsAuthenticated?: (auth: boolean) => void }> = ({ setI
 
   return (
     <div style={{ width: '100%', height: '100vh', position: 'relative', overflow: 'hidden' }}>
-      <Aurora
-        colorStops={["#3A29FF", "#FF94B4", "#FF3232"]}
-        blend={0.5}
-        amplitude={1.0}
-        speed={0.5}
-      />
+      <div style={{ width: '100%', height: '100vh', position: 'absolute', top: 0, left: 0, zIndex: 0 }}>
+        <PrismaticBurst
+          animationType="rotate3d"
+          intensity={2}
+          speed={0.5}
+          distort={1.0}
+          paused={false}
+          offset={{ x: 0, y: 0 }}
+          hoverDampness={0.25}
+          rayCount={24}
+          mixBlendMode="lighten"
+        />
+      </div>
       <div style={{ position: 'fixed', top: '2rem', right: '2rem', zIndex: 100, width: 'auto', height: 'auto', pointerEvents: 'auto' }}>
         <StaggeredMenu
           position="right"

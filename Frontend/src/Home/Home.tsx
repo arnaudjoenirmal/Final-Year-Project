@@ -1,74 +1,339 @@
-import React from 'react';
-import PrismaticBurst from '../components/PrismaticBurst';
-import { useNavigate } from 'react-router-dom';
-import StaggeredMenu from '../components/StaggeredMenu';
-
+import React, { useRef, useState } from "react";
+import Progress from "../components/Progress";
+import PrismaticBurst from "../components/PrismaticBurst";
+import Hyperspeed from "../components/Hyperspeed";
+import { useNavigate } from "react-router-dom";
+import StaggeredMenu from "../components/StaggeredMenu";
+import ShinyText from "../components/ShinyText";
 
 const menuItems = [
-  { label: 'Home', ariaLabel: 'Go to home page', link: '/' },
-  { label: 'About', ariaLabel: 'Learn about us', link: '/about' },
-  { label: 'Services', ariaLabel: 'View our services', link: '/services' },
-  { label: 'LogOut', ariaLabel: 'Log out of your account', link: '/login' }
+  { label: "Home", ariaLabel: "Go to home page", link: "/" },
+  { label: "About", ariaLabel: "Learn about us", link: "/about" },
+  { label: "Services", ariaLabel: "View our services", link: "/services" },
+  { label: "LogOut", ariaLabel: "Log out of your account", link: "/login" },
 ];
 
-const socialItems = [
-  { label: 'GitHub', link: 'https://github.com' },
-];
+const socialItems = [{ label: "GitHub", link: "https://github.com" }];
+
+interface FileInfo {
+  name: string;
+  icon: string;
+}
+
+function getIconType(ext: string | undefined): string {
+  if (!ext) return "UNKNOWN";
+  const normalized = ext.toUpperCase();
+  return normalized === "TXT" ? "TXT" : "UNKNOWN";
+}
+
 const Home: React.FC = () => {
   const navigate = useNavigate();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [filenames, setNames] = useState<FileInfo[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+  const [uploadingStatus, setUploadingStatus] = useState<boolean[]>([]);
 
-  // Session check: redirect to login if not authenticated
+  // Redirect if not logged in
   React.useEffect(() => {
-    if (sessionStorage.getItem('isAuthenticated') !== 'true') {
-      navigate('/login');
+    if (sessionStorage.getItem("isAuthenticated") !== "true") {
+      navigate("/login");
     }
   }, [navigate]);
 
+  // Handle menu item click
   const handleMenuItemClick = (item: any) => {
-    if (item.label === 'LogOut') {
-      sessionStorage.removeItem('isAuthenticated');
-      navigate('/login');
+    if (item.label === "LogOut") {
+      sessionStorage.removeItem("isAuthenticated");
+      navigate("/login");
     } else if (item.link) {
       navigate(item.link);
     }
   };
 
+  // Remove file handler
+  const removeFile = (index: number) => {
+    setNames(prev => prev.filter((_, i) => i !== index));
+    setUploadingStatus(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Handle file selection
+  const fileHandler = (files: FileList | File[]) => {
+    const fileArr = Array.from(files);
+    if (fileArr.length === 0) return;
+
+    const fNames = fileArr
+      .filter(file => file.name.split(".").pop()?.toLowerCase() === "txt")
+      .map((file) => ({
+        name: file.name,
+        icon: getIconType(file.name.split(".").pop()),
+      }));
+
+    if (fNames.length === 0) {
+      alert("Only .txt files are allowed.");
+      return;
+    }
+
+    setNames((prev) => [...prev, ...fNames]);
+    setUploadingStatus((prev) => [...prev, ...fNames.map(() => true)]);
+  };
+
+  // Open file picker
+  const filePicker = () => inputRef.current?.click();
+
+  // Handle drag/drop manually
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => setIsDragging(false);
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files.length > 0) {
+      fileHandler(e.dataTransfer.files);
+    }
+  };
+
+  // Callback for Progress to mark upload complete
+  const handleProgressComplete = (index: number) => {
+    setUploadingStatus(prev => {
+      const updated = [...prev];
+      updated[index] = false;
+      return updated;
+    });
+  };
+
+  // Is any file uploading?
+  const isUploading = uploadingStatus.some(status => status);
+
+  // Add a handler for the button (customize as needed)
+  const handleAnalyze = () => {
+    if (filenames.length === 0) {
+      alert("Please upload at least one file before analyzing.");
+      return;
+    }
+    // Navigate to analyzer page
+    navigate("/analyzer");
+  };
+
   return (
-    <div style={{ width: '100%', height: '100vh', position: 'relative', overflow: 'hidden' }}>
-      <div style={{ width: '100%', height: '100vh', position: 'absolute', top: 0, left: 0, zIndex: 0 }}>
-        <PrismaticBurst
-          animationType="rotate3d"
-          intensity={2}
-          speed={0.5}
-          distort={1.0}
-          paused={false}
-          offset={{ x: 0, y: 0 }}
-          hoverDampness={0.25}
-          rayCount={24}
-          mixBlendMode="lighten"
+    <div
+      style={{
+        width: "100%",
+        height: "100vh",
+        position: "relative",
+        overflow: "hidden",
+      }}
+    >
+      {/* Conditional Background Animation */}
+      <div
+        style={{
+          width: "100%",
+          height: "100vh",
+          position: "absolute",
+          top: 0,
+          left: 0,
+          zIndex: 0,
+        }}
+      >
+        {isUploading ? (
+          <Hyperspeed
+            effectOptions={{
+              // ...your Hyperspeed options...
+            }}
+          />
+        ) : (
+          <PrismaticBurst
+            animationType="rotate3d"
+            intensity={2}
+            speed={0.5}
+            distort={1.0}
+            paused={false}
+            offset={{ x: 0, y: 0 }}
+            hoverDampness={0.25}
+            rayCount={24}
+            mixBlendMode="lighten"
+          />
+        )}
+      </div>
+
+      {/* Sidebar Menu */}
+      <div style={{ height: "100vh", background: "transparent" }}>
+        <StaggeredMenu
+          position="right"
+          items={menuItems}
+          socialItems={socialItems}
+          displaySocials={true}
+          displayItemNumbering={true}
+          menuButtonColor="#fff"
+          openMenuButtonColor="#0c0101ff"
+          changeMenuColorOnOpen={true}
+          colors={["#B19EEF", "#5227FF"]}
+          logoUrl="./Logo.png"
+          accentColor="#ff6b6b"
+          onMenuOpen={() => console.log("Menu opened")}
+          onMenuClose={() => console.log("Menu closed")}
+          onItemClick={handleMenuItemClick}
         />
       </div>
-          <div style={{ height: '100vh', background: '#1a1a1a' }}>
-            <StaggeredMenu
-              position="right"
-              items={menuItems}
-              socialItems={socialItems}
-              displaySocials={true}
-              displayItemNumbering={true}
-              menuButtonColor="#fff"
-              openMenuButtonColor="#0c0101ff"
-              changeMenuColorOnOpen={true}
-              colors={['#B19EEF', '#5227FF']}
-              logoUrl="./Logo.png"
-              accentColor="#ff6b6b"
-              onMenuOpen={() => console.log('Menu opened')}
-              onMenuClose={() => console.log('Menu closed')}
-              onItemClick={handleMenuItemClick}
-            />
+
+      {/* Upload Card */}
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: "100vw",
+          height: "100vh",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          zIndex: 9999,
+        }}
+      >
+        <div
+          className="container"
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            width: "370px",
+            minHeight: "410px",
+            borderRadius: "24px",
+            background: "rgba(255, 255, 255, 0.18)",
+            boxShadow: "0px 8px 32px 0px rgba(31, 38, 135, 0.37)",
+            backdropFilter: "blur(14px)",
+            WebkitBackdropFilter: "blur(14px)",
+            border: "1px solid rgba(255, 255, 255, 0.28)",
+            padding: "32px 32px 24px 32px",
+          }}
+        >
+          <h3
+            style={{
+              fontSize: 20,
+              letterSpacing: 2,
+              color: "#3d4852",
+              fontWeight: 700,
+              textAlign: "center",
+              marginBottom: 24,
+            }}
+          >
+            UPLOAD FILE
+          </h3>
+
+          {/* Uploaded File Progress */}
+          <div style={{ width: "100%", marginBottom: 24 }}>
+            {filenames.map((file, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", marginBottom: 8 }}>
+                <Progress
+                  name={file.name}
+                  icon={file.icon}
+                  onComplete={() => handleProgressComplete(i)}
+                />
+                <button
+                  style={{
+                    marginLeft: 8,
+                    background: "#ff6b6b",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: "4px",
+                    padding: "4px 8px",
+                    cursor: "pointer",
+                    fontSize: "14px"
+                  }}
+                  onClick={() => removeFile(i)}
+                  aria-label={`Remove ${file.name}`}
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
           </div>
-      <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'white', pointerEvents: 'none' }}>
-        <h1>Welcome to the Home Page!</h1>
-        <p>You are successfully logged in.</p>
+
+          {/* File Drop / Click Area */}
+          <div
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            onClick={filePicker}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+            style={{
+              width: "270px",
+              height: "180px",
+              borderRadius: "18px",
+              border: `2px dashed ${
+                isDragging ? "#0057ff" : isHovered ? "#688ee8" : "#688ee8"
+              }`,
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              alignItems: "center",
+              background: isDragging ? "#eef3ff" : "#fff",
+              cursor: "pointer",
+              transition: "all 0.25s ease",
+              transform: isDragging ? "scale(1.03)" : "scale(1)",
+            }}
+          >
+            <p
+              style={{
+                fontSize: "17px",
+                letterSpacing: "2px",
+                color: "#3d4852",
+                fontWeight: 500,
+                textAlign: "center",
+                margin: 0,
+                userSelect: "none",
+              }}
+            >
+              DRAG FILE HERE <br /> OR{" "}
+              <span
+                style={{
+                  color: "#688ee8",
+                  fontWeight: 600,
+                  textDecoration: "underline",
+                }}
+              >
+                BROWSE
+              </span>
+            </p>
+          </div>
+
+          {/* Hidden File Input */}
+          <input
+            accept=".txt"
+            style={{ display: "none" }}
+            ref={inputRef}
+            multiple
+            type="file"
+            onChange={(e) => fileHandler(e.target.files as FileList)}
+          />
+
+          {/* Start Analyzing Button - only show if files are uploaded */}
+          {filenames.length > 0 && (
+            <button
+              className="w-full py-2 rounded flex items-center justify-center btn-animate"
+              style={{
+                background: "#060010",
+                color: "white",
+                fontWeight: "bold",
+                marginTop: "1.5rem",
+                cursor: "pointer",
+                fontSize: "1.1rem",
+                border: "none",
+                outline: "none",
+                transition: "background 0.2s",
+              }}
+              onClick={handleAnalyze}
+            >
+              <ShinyText text="START ANALYZING" speed={2} className="text-lg" />
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -1,17 +1,17 @@
 import './App.css'
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import Login from './Login/Login'
-import Home from './Home/Home'
-import Analyzer from './Analyzer/Analyzer' // <-- Import the Analyzer page
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import Login from './Login/Login';
+import Home from './Home/Home';
+import Analyzer from './Analyzer/Analyzer';
+import Results from './Results/Results';
+
+function ProtectedRoute({ children }: { children: React.ReactElement }) {
+  const isAuthenticated = sessionStorage.getItem('isAuthenticated') === 'true';
+  return isAuthenticated ? children : <Navigate to="/login" replace />;
+}
 
 function App() {
-  // Protected route wrapper
-  const ProtectedRoute = ({ children }: { children: React.ReactElement }) => {
-    const isAuthenticated = sessionStorage.getItem('isAuthenticated') === 'true';
-    return isAuthenticated ? children : <Navigate to="/login" replace />;
-  };
-
   return (
     <BrowserRouter>
       <Routes>
@@ -26,11 +26,15 @@ function App() {
             <Analyzer />
           </ProtectedRoute>
         } />
-        {/* Add other protected routes here as needed */}
+        <Route path="/results" element={
+          <ProtectedRoute>
+            <Results />
+          </ProtectedRoute>
+        } />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>
-  )
+  );
 }
 
-export default App
+export default App;

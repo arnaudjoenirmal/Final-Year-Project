@@ -25,6 +25,7 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-file-drop": "^3.1.6",
+    "react-loading-indicators": "^1.0.1",
     "react-router-dom": "^7.9.3",
     "tailwind-merge": "^3.3.1",
     "tailwindcss": "^4.1.14",

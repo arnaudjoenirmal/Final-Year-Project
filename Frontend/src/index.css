@@ -12,7 +12,6 @@ html, body, #root {
   min-height: 100vh;
   box-sizing: border-box;
   background: #060010;
-  overflow: hidden;
   font-family: 'Inter', system-ui, sans-serif !important;
 }
 

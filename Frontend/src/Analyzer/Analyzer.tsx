@@ -1,10 +1,15 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import RotatingText from "../components/RotatingText";
 import Particles from "../components/Particles";
 
 const Analyzer: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Get passed data
+  const files = location.state?.files;
+  const link = location.state?.link;
 
   return (
     <div
@@ -72,55 +77,75 @@ const Analyzer: React.FC = () => {
           position: "relative",
           zIndex: 1,
           display: "flex",
+          flexDirection: "column",
           justifyContent: "center",
           alignItems: "center",
         }}
       >
-        <span
-          style={{
-            fontSize: "3rem",
-            fontWeight: 700,
-            color: "rgba(255,255,255,0.85)",
-            marginRight: "1rem",
-            letterSpacing: "1px",
-            lineHeight: "1",
-          }}
-        >
-          Text
-        </span>
-        <span
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            background: "#5227FF",
-            color: "#fff",
-            borderRadius: "16px",
-            padding: "0.5rem 1.5rem",
-            fontWeight: 700,
-            fontSize: "3rem",
-            minWidth: "220px",
-            height: "3.5rem",
-            lineHeight: "1",
-            justifyContent: "center",
-            transition: "width 0.3s",
-            overflow: "hidden",
-          }}
-        >
-          <RotatingText
-            texts={["Reading", "Processing", "Analyzing"]}
-            splitBy="words"
-            mainClassName=""
-            staggerFrom={"last"}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            staggerDuration={0}
-            splitLevelClassName=""
-            transition={{ type: "spring", damping: 30, stiffness: 400 }}
-            rotationInterval={2000}
-            auto={true}
-          />
-        </span>
+        <div style={{ display: "flex", alignItems: "center", marginBottom: "2rem" }}>
+          <span
+            style={{
+              fontSize: "3rem",
+              fontWeight: 700,
+              color: "rgba(255,255,255,0.85)",
+              marginRight: "1rem",
+              letterSpacing: "1px",
+              lineHeight: "1",
+            }}
+          >
+            Text
+          </span>
+          <span
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              background: "#5227FF",
+              color: "#fff",
+              borderRadius: "16px",
+              padding: "0.5rem 1.5rem",
+              fontWeight: 700,
+              fontSize: "3rem",
+              minWidth: "220px",
+              height: "3.5rem",
+              lineHeight: "1",
+              justifyContent: "center",
+              transition: "width 0.3s",
+              overflow: "hidden",
+            }}
+          >
+            <RotatingText
+              texts={["Reading", "Processing", "Analyzing"]}
+              splitBy="words"
+              mainClassName=""
+              staggerFrom={"last"}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              staggerDuration={0}
+              splitLevelClassName=""
+              transition={{ type: "spring", damping: 30, stiffness: 400 }}
+              rotationInterval={2000}
+              auto={true}
+            />
+          </span>
+        </div>
+
+        {/* Show file or link data */}
+        {files && (
+          <div style={{ color: "#fff", fontSize: "1.2rem", marginBottom: "1rem" }}>
+            <strong>Files:</strong>
+            <ul>
+              {files.map((file: any, idx: number) => (
+                <li key={idx}>{file.name}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {link && (
+          <div style={{ color: "#fff", fontSize: "1.2rem", marginBottom: "1rem" }}>
+            <strong>Link:</strong> {link}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -3,6 +3,7 @@
   width: 100%;
   height: 100%;
   z-index: 40;
+  pointer-events: none;
 }
 
 .staggered-menu-wrapper.fixed-wrapper {
@@ -13,6 +14,10 @@
   height: 100vh;
   z-index: 40;
   overflow: hidden;
+}
+
+.staggered-menu-wrapper[data-open="true"] {
+  pointer-events: auto;
 }
 
 .staggered-menu-header {

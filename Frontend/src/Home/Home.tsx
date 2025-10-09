@@ -5,6 +5,7 @@ import Hyperspeed from "../components/Hyperspeed";
 import { useNavigate } from "react-router-dom";
 import StaggeredMenu from "../components/StaggeredMenu";
 import ShinyText from "../components/ShinyText";
+import Magnet from "../components/Magnet";
 
 const menuItems = [
   { label: "Home", ariaLabel: "Go to home page", link: "/" },
@@ -33,6 +34,8 @@ const Home: React.FC = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [uploadingStatus, setUploadingStatus] = useState<boolean[]>([]);
+  const [showLinkBox, setShowLinkBox] = useState(false);
+  const [linkValue, setLinkValue] = useState("");
 
   // Redirect if not logged in
   React.useEffect(() => {
@@ -109,29 +112,57 @@ const Home: React.FC = () => {
   // Is any file uploading?
   const isUploading = uploadingStatus.some(status => status);
 
-  // Add a handler for the button (customize as needed)
+  // Analyze button for file upload
   const handleAnalyze = () => {
     if (filenames.length === 0) {
       alert("Please upload at least one file before analyzing.");
       return;
     }
-    // Navigate to analyzer page
-    navigate("/analyzer");
+    navigate("/analyzer", { state: { files: filenames } });
+  };
+
+  // Analyze button for link box
+  const handleLinkAnalyze = () => {
+    if (!linkValue.trim()) {
+      alert("Please enter a link before analyzing.");
+      return;
+    }
+    setShowLinkBox(false);
+    setLinkValue("");
+    navigate("/analyzer", { state: { link: linkValue.trim() } });
   };
 
   return (
     <div
       style={{
-        width: "100%",
+        width: "100vw",
         height: "100vh",
         position: "relative",
         overflow: "hidden",
       }}
     >
+      {/* Sidebar Menu - render first */}
+      <StaggeredMenu
+        position="right"
+        items={menuItems}
+        socialItems={socialItems}
+        displaySocials={true}
+        displayItemNumbering={true}
+        menuButtonColor="#fff"
+        openMenuButtonColor="#0c0101ff"
+        changeMenuColorOnOpen={true}
+        colors={["#B19EEF", "#5227FF"]}
+        logoUrl="./Logo.png"
+        accentColor="#ff6b6b"
+        onMenuOpen={() => console.log("Menu opened")}
+        onMenuClose={() => console.log("Menu closed")}
+        onItemClick={handleMenuItemClick}
+      />
+
       {/* Conditional Background Animation */}
       <div
         style={{
-          width: "100%",
+          width: "100vw",
           height: "100vh",
           position: "absolute",
           top: 0,
@@ -140,11 +171,7 @@ const Home: React.FC = () => {
         }}
       >
         {isUploading ? (
-          <Hyperspeed
-            effectOptions={{
-              // ...your Hyperspeed options...
-            }}
-          />
+          <Hyperspeed effectOptions={{ /* ... */ }} />
         ) : (
           <PrismaticBurst
             animationType="rotate3d"
@@ -160,26 +187,6 @@ const Home: React.FC = () => {
         )}
       </div>
 
-      {/* Sidebar Menu */}
-      <div style={{ height: "100vh", background: "transparent" }}>
-        <StaggeredMenu
-          position="right"
-          items={menuItems}
-          socialItems={socialItems}
-          displaySocials={true}
-          displayItemNumbering={true}
-          menuButtonColor="#fff"
-          openMenuButtonColor="#0c0101ff"
-          changeMenuColorOnOpen={true}
-          colors={["#B19EEF", "#5227FF"]}
-          logoUrl="./Logo.png"
-          accentColor="#ff6b6b"
-          onMenuOpen={() => console.log("Menu opened")}
-          onMenuClose={() => console.log("Menu closed")}
-          onItemClick={handleMenuItemClick}
-        />
-      </div>
-
       {/* Upload Card */}
       <div
         style={{
@@ -191,7 +198,7 @@ const Home: React.FC = () => {
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
-          zIndex: 9999,
+          zIndex: 10,
         }}
       >
         <div
@@ -210,6 +217,7 @@ const Home: React.FC = () => {
             WebkitBackdropFilter: "blur(14px)",
             border: "1px solid rgba(255, 255, 255, 0.28)",
             padding: "32px 32px 24px 32px",
+            position: "relative",
           }}
         >
           <h3
@@ -333,8 +341,124 @@ const Home: React.FC = () => {
               <ShinyText text="START ANALYZING" speed={2} className="text-lg" />
             </button>
           )}
+
+          {/* Drop Links Magnet Button - centered under the box */}
+          <div style={{ width: "100%", display: "flex", justifyContent: "center", marginTop: "2rem" }}>
+            <Magnet padding={100} disabled={false} magnetStrength={100}>
+              <button
+                style={{
+                  width: "180px",
+                  padding: "0.75rem 0",
+                  background: "rgba(82,39,255,0.18)",
+                  color: "#fff",
+                  fontWeight: "bold",
+                  fontSize: "1.1rem",
+                  border: "1px solid rgba(255,255,255,0.28)",
+                  borderRadius: "12px",
+                  cursor: "pointer",
+                  boxShadow: "0 2px 8px rgba(82,39,255,0.15)",
+                  backdropFilter: "blur(14px)",
+                  WebkitBackdropFilter: "blur(14px)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  position: "relative",
+                  transition: "background 0.2s",
+                }}
+                onClick={() => setShowLinkBox(true)}
+              >
+                <ShinyText text="Drop Links" speed={2} className="text-lg" />
+              </button>
+            </Magnet>
+          </div>
         </div>
       </div>
+
+      {/* Glassmorphism Link Box Modal */}
+      {showLinkBox && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            background: "rgba(0,0,0,0.2)",
+            zIndex: 100,
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+          onClick={() => setShowLinkBox(false)}
+        >
+          <div
+            style={{
+              minWidth: "340px",
+              maxWidth: "90vw",
+              borderRadius: "24px",
+              background: "rgba(255, 255, 255, 0.18)",
+              boxShadow: "0px 8px 32px 0px rgba(31, 38, 135, 0.37)",
+              backdropFilter: "blur(14px)",
+              WebkitBackdropFilter: "blur(14px)",
+              border: "1px solid rgba(255, 255, 255, 0.28)",
+              padding: "32px 32px 24px 32px",
+              position: "relative",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <h3
+              style={{
+                fontSize: 20,
+                letterSpacing: 2,
+                color: "#3d4852",
+                fontWeight: 700,
+                textAlign: "center",
+                marginBottom: 24,
+              }}
+            >
+              Add your link here
+            </h3>
+            <input
+              type="text"
+              value={linkValue}
+              onChange={e => setLinkValue(e.target.value)}
+              placeholder="Paste your link..."
+              style={{
+                width: "100%",
+                padding: "12px",
+                borderRadius: "8px",
+                border: "1px solid #688ee8",
+                fontSize: "16px",
+                marginBottom: "1.5rem",
+                background: "#f8faff",
+                color: "#3d4852",
+              }}
+            />
+            <button
+              className="w-full py-2 rounded flex items-center justify-center btn-animate"
+              style={{
+                background: "#060010",
+                color: "white",
+                fontWeight: "bold",
+                marginTop: "0.5rem",
+                cursor: linkValue.trim() ? "pointer" : "not-allowed",
+                fontSize: "1.1rem",
+                border: "none",
+                outline: "none",
+                transition: "background 0.2s",
+                opacity: linkValue.trim() ? 1 : 0.6,
+              }}
+              onClick={handleLinkAnalyze}
+              disabled={!linkValue.trim()}
+            >
+              <ShinyText text="START ANALYZING" speed={2} className="text-lg" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

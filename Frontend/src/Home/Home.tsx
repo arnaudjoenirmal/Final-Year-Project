@@ -10,7 +10,6 @@ import Magnet from "../components/Magnet";
 const menuItems = [
   { label: "Home", ariaLabel: "Go to home page", link: "/" },
   { label: "About", ariaLabel: "Learn about us", link: "/about" },
-  { label: "Services", ariaLabel: "View our services", link: "/services" },
   { label: "LogOut", ariaLabel: "Log out of your account", link: "/login" },
 ];
 
@@ -19,6 +18,7 @@ const socialItems = [{ label: "GitHub", link: "https://github.com" }];
 interface FileInfo {
   name: string;
   icon: string;
+  file?: File; // Store actual file object
 }
 
 function getIconType(ext: string | undefined): string {
@@ -36,15 +36,15 @@ const Home: React.FC = () => {
   const [uploadingStatus, setUploadingStatus] = useState<boolean[]>([]);
   const [showLinkBox, setShowLinkBox] = useState(false);
   const [linkValue, setLinkValue] = useState("");
+  const [linkProcessing, setLinkProcessing] = useState(false);
 
-  // Redirect if not logged in
   React.useEffect(() => {
     if (sessionStorage.getItem("isAuthenticated") !== "true") {
       navigate("/login");
     }
   }, [navigate]);
 
-  // Handle menu item click
+  
   const handleMenuItemClick = (item: any) => {
     if (item.label === "LogOut") {
       sessionStorage.removeItem("isAuthenticated");
@@ -54,13 +54,12 @@ const Home: React.FC = () => {
     }
   };
 
-  // Remove file handler
+
   const removeFile = (index: number) => {
     setNames(prev => prev.filter((_, i) => i !== index));
     setUploadingStatus(prev => prev.filter((_, i) => i !== index));
   };
 
-  // Handle file selection
   const fileHandler = (files: FileList | File[]) => {
     const fileArr = Array.from(files);
     if (fileArr.length === 0) return;
@@ -70,6 +69,7 @@ const Home: React.FC = () => {
       .map((file) => ({
         name: file.name,
         icon: getIconType(file.name.split(".").pop()),
+        file: file, // Store the actual file
       }));
 
     if (fNames.length === 0) {
@@ -81,10 +81,8 @@ const Home: React.FC = () => {
     setUploadingStatus((prev) => [...prev, ...fNames.map(() => true)]);
   };
 
-  // Open file picker
   const filePicker = () => inputRef.current?.click();
 
-  // Handle drag/drop manually
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsDragging(true);
@@ -100,7 +98,6 @@ const Home: React.FC = () => {
     }
   };
 
-  // Callback for Progress to mark upload complete
   const handleProgressComplete = (index: number) => {
     setUploadingStatus(prev => {
       const updated = [...prev];
@@ -109,27 +106,94 @@ const Home: React.FC = () => {
     });
   };
 
-  // Is any file uploading?
   const isUploading = uploadingStatus.some(status => status);
 
-  // Analyze button for file upload
-  const handleAnalyze = () => {
+  const handleAnalyze = async () => {
     if (filenames.length === 0) {
       alert("Please upload at least one file before analyzing.");
       return;
     }
-    navigate("/analyzer", { state: { files: filenames } });
+
+    // Upload all files to backend and collect responses
+    const uploadPromises = filenames.map(async (fileInfo) => {
+      if (!fileInfo.file) return null;
+      
+      const formData = new FormData();
+      formData.append("file", fileInfo.file);
+
+      try {
+        const response = await fetch("http://127.0.0.1:8000/upload-file", {
+          method: "POST",
+          body: formData,
+          mode: 'cors', // Explicitly set CORS mode
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Failed to upload ${fileInfo.name}: ${response.status} ${errorText}`);
+        }
+
+        return await response.json();
+      } catch (error: any) {
+        console.error(`Error uploading ${fileInfo.name}:`, error);
+        // Show specific error message
+        if (error.message.includes('NetworkError') || error.message.includes('fetch')) {
+          alert(`Backend server error: Cannot connect to http://127.0.0.1:8000\n\nPlease ensure:\n1. Backend server is running\n2. CORS is enabled in FastAPI\n\nError: ${error.message}`);
+        }
+        return null;
+      }
+    });
+
+    const results = await Promise.all(uploadPromises);
+    const validResults = results.filter(r => r !== null);
+
+    console.log("Upload results:", validResults);
+
+    if (validResults.length === 0) {
+      alert("Failed to upload files. Please check:\n1. Backend server is running on port 8000\n2. CORS middleware is configured\n3. Check browser console for details");
+      return;
+    }
+
+    navigate("/analyzer", { state: { files: filenames, uploadedData: validResults } });
   };
 
-  // Analyze button for link box
-  const handleLinkAnalyze = () => {
+  const handleLinkAnalyze = async () => {
     if (!linkValue.trim()) {
       alert("Please enter a link before analyzing.");
       return;
     }
-    setShowLinkBox(false);
-    setLinkValue("");
-    navigate("/analyzer", { state: { link: linkValue.trim() } });
+
+    setLinkProcessing(true);
+
+    try {
+      // Create FormData instead of JSON
+      const formData = new FormData();
+      formData.append("url", linkValue.trim());
+
+      const response = await fetch("http://127.0.0.1:8000/crawl", {
+        method: "POST",
+        body: formData, // Send as FormData, not JSON
+        mode: 'cors', // Explicitly set CORS mode
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || "Failed to process link");
+      }
+
+      const crawlData = await response.json();
+      console.log("Crawl data from Home:", crawlData);
+
+      setShowLinkBox(false);
+      setLinkValue("");
+      setLinkProcessing(false);
+
+      // Navigate to analyzer with the crawl data directly
+      navigate("/analyzer", { state: { crawlData: crawlData } });
+    } catch (error: any) {
+      setLinkProcessing(false);
+      alert(`Error: ${error.message}`);
+    }
   };
 
   return (
@@ -170,7 +234,7 @@ const Home: React.FC = () => {
           zIndex: 0,
         }}
       >
-        {isUploading ? (
+        {isUploading || linkProcessing ? (
           <Hyperspeed effectOptions={{ /* ... */ }} />
         ) : (
           <PrismaticBurst
@@ -389,7 +453,7 @@ const Home: React.FC = () => {
             justifyContent: "center",
             alignItems: "center",
           }}
-          onClick={() => setShowLinkBox(false)}
+          onClick={() => !linkProcessing && setShowLinkBox(false)}
         >
           <div
             style={{
@@ -419,13 +483,14 @@ const Home: React.FC = () => {
                 marginBottom: 24,
               }}
             >
-              Add your link here
+              Add your Reddit link here
             </h3>
             <input
               type="text"
               value={linkValue}
               onChange={e => setLinkValue(e.target.value)}
-              placeholder="Paste your link..."
+              placeholder="Paste your Reddit link..."
+              disabled={linkProcessing}
               style={{
                 width: "100%",
                 padding: "12px",
@@ -433,8 +498,9 @@ const Home: React.FC = () => {
                 border: "1px solid #688ee8",
                 fontSize: "16px",
                 marginBottom: "1.5rem",
-                background: "#f8faff",
+                background: linkProcessing ? "#e0e0e0" : "#f8faff",
                 color: "#3d4852",
+                cursor: linkProcessing ? "not-allowed" : "text",
               }}
             />
             <button
@@ -444,17 +510,21 @@ const Home: React.FC = () => {
                 color: "white",
                 fontWeight: "bold",
                 marginTop: "0.5rem",
-                cursor: linkValue.trim() ? "pointer" : "not-allowed",
+                cursor: (linkValue.trim() && !linkProcessing) ? "pointer" : "not-allowed",
                 fontSize: "1.1rem",
                 border: "none",
                 outline: "none",
                 transition: "background 0.2s",
-                opacity: linkValue.trim() ? 1 : 0.6,
+                opacity: (linkValue.trim() && !linkProcessing) ? 1 : 0.6,
               }}
               onClick={handleLinkAnalyze}
-              disabled={!linkValue.trim()}
+              disabled={!linkValue.trim() || linkProcessing}
             >
-              <ShinyText text="START ANALYZING" speed={2} className="text-lg" />
+              <ShinyText 
+                text={linkProcessing ? "PROCESSING..." : "START ANALYZING"} 
+                speed={2} 
+                className="text-lg" 
+              />
             </button>
           </div>
         </div>

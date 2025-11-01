@@ -4,11 +4,50 @@ import { motion } from "framer-motion";
 import LightRays from "../components/LightRays";
 import DepressionInsightDashboard from "./DepressionInsightDashboard";
 
+interface VADData {
+  sentence: string;
+  valence: number;
+  arousal: number;
+  dominance: number;
+}
+
+interface CrawlResponse {
+  post?: {
+    post_id: string;
+    title: string;
+    body: string;
+    subreddit: string;
+    author: string;
+    created_utc: number;
+    score: number;
+    num_comments: number;
+    url: string;
+  };
+  num_comments?: number;
+  vad?: VADData[];
+  transliteration_sample?: string;
+  pipeline_used?: string;
+}
+
+interface UploadResponse {
+  vad?: VADData[];
+  per_token?: Array<{
+    token: string;
+    valence: number;
+    arousal: number;
+    dominance: number;
+    in_cache: boolean;
+  }>;
+  transliteration_sample?: string;
+  corrections_applied?: number;
+  pipeline_used?: string;
+}
+
 const Results: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const files = location.state?.files;
-  const backendFiles = location.state?.backendFiles;
+  const crawlData = location.state?.crawlData as CrawlResponse | undefined;
+  const uploadedData = location.state?.uploadedData as UploadResponse[] | undefined;
 
   return (
     <div
@@ -122,7 +161,7 @@ const Results: React.FC = () => {
             marginBottom: "4rem",
           }}
         >
-          <DepressionInsightDashboard />
+          <DepressionInsightDashboard crawlData={crawlData} uploadedData={uploadedData} />
         </motion.div>
 
       </div>

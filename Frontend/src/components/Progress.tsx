@@ -19,18 +19,21 @@ const Progress: React.FC<ProgressProps> = ({ icon, name, onComplete }) => {
       let timeout = setInterval(() => {
         setWidth(prev => {
           if (prev < 100) return prev + 1;
-          if (!complete && !calledRef.current) {
-            setComplete(true);
-            setColor("#6cc08a");
-            calledRef.current = true;
-            if (onComplete) onComplete();
-          }
           return prev;
         });
       }, 50);
       return () => clearInterval(timeout);
     }
-  }, [name, complete, onComplete]);
+  }, [name]);
+
+  useEffect(() => {
+    if (width >= 100 && !calledRef.current) {
+      setComplete(true);
+      setColor("#6cc08a");
+      calledRef.current = true;
+      if (onComplete) onComplete();
+    }
+  }, [width, onComplete]);
 
   return (
     <div className="progress">

@@ -7,17 +7,90 @@ import {
   ScatterChart,
 } from "@mui/x-charts";
 
-export default function DepressionInsightDashboard() {
-  // VAD Data (Valence, Arousal, Dominance)
-  const vadData = [
-    { utterance: 1, valence: 0.6, arousal: 0.5, dominance: 0.7 },
-    { utterance: 2, valence: 0.4, arousal: 0.6, dominance: 0.5 },
-    { utterance: 3, valence: 0.7, arousal: 0.8, dominance: 0.6 },
-    { utterance: 4, valence: 0.5, arousal: 0.4, dominance: 0.5 },
-  ];
+interface VADData {
+  sentence: string;
+  valence: number;
+  arousal: number;
+  dominance: number;
+}
 
-  // Calculate Depression Trajectory from the VAD data
-  // A higher score indicates a more negative emotional state.
+interface CrawlResponse {
+  post?: {
+    post_id: string;
+    title: string;
+    body: string;
+    subreddit: string;
+    author: string;
+    created_utc: number;
+    score: number;
+    num_comments: number;
+    url: string;
+  };
+  num_comments?: number;
+  vad?: VADData[];
+  transliteration_sample?: string;
+  pipeline_used?: string;
+}
+
+interface UploadResponse {
+  vad?: VADData[];
+  per_token?: Array<{
+    token: string;
+    valence: number;
+    arousal: number;
+    dominance: number;
+    in_cache: boolean;
+  }>;
+  transliteration_sample?: string;
+  corrections_applied?: number;
+  pipeline_used?: string;
+}
+
+interface Props {
+  crawlData?: CrawlResponse;
+  uploadedData?: UploadResponse[];
+}
+
+export default function DepressionInsightDashboard({ crawlData, uploadedData }: Props) {
+  // Combine VAD data from all sources
+  const getAllVADData = (): VADData[] => {
+    const allVAD: VADData[] = [];
+    
+    if (crawlData?.vad) {
+      allVAD.push(...crawlData.vad);
+    }
+    
+    if (uploadedData) {
+      uploadedData.forEach(data => {
+        if (data?.vad) {
+          allVAD.push(...data.vad);
+        }
+      });
+    }
+    
+    return allVAD;
+  };
+
+  const allVAD = getAllVADData();
+
+  // Normalize VAD values to 0-1 range (backend returns 1-9 scale)
+  const normalizeVAD = (value: number) => (value - 1) / 8;
+
+  // VAD Data prepared for charts
+  const vadData = allVAD.length > 0 
+    ? allVAD.map((item, index) => ({
+        utterance: index + 1,
+        valence: normalizeVAD(item.valence),
+        arousal: normalizeVAD(item.arousal),
+        dominance: normalizeVAD(item.dominance),
+      }))
+    : [
+        { utterance: 1, valence: 0.6, arousal: 0.5, dominance: 0.7 },
+        { utterance: 2, valence: 0.4, arousal: 0.6, dominance: 0.5 },
+        { utterance: 3, valence: 0.7, arousal: 0.8, dominance: 0.6 },
+        { utterance: 4, valence: 0.5, arousal: 0.4, dominance: 0.5 },
+      ];
+
   const depressionTrajectoryData = vadData.map((d) => ({
     utterance: d.utterance,
     depressionScore:

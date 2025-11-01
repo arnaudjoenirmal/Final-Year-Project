@@ -1,0 +1,123 @@
+2025-10-31 16:05:53,219 - app - INFO - [upload_1761906953218] Starting /upload-file request
+2025-10-31 16:05:53,219 - app - INFO - [upload_1761906953218] File: cleaned.txt, pipeline: True, corrections: True
+2025-10-31 16:05:53,219 - app - INFO - [upload_1761906953218] File read completed in 0.00s - 7602 characters
+2025-10-31 16:05:53,219 - app - INFO - [upload_1761906953218] Starting text processing (pipeline=True)...
+2025-10-31 16:07:39,220 - app - INFO - [upload_1761906953218] Text processing completed in 106.00s
+2025-10-31 16:07:39,220 - app - INFO - [upload_1761906953218] Computing VAD scores...
+2025-10-31 16:07:39,694 - app - INFO - [upload_1761906953218] VAD computation completed in 0.47s - 1097 tokens
+2025-10-31 16:07:39,694 - app - INFO - [upload_1761906953218] Total request completed in 106.48s
+2025-10-31 16:07:39,695 - app - INFO - [upload_1761906953218] Generated 44 utterances
+2025-10-31 16:07:39,697 - app - INFO - [upload_1761907059697] Starting /upload-file request
+2025-10-31 16:07:39,699 - app - INFO - [upload_1761907059697] File: tamil.txt, pipeline: True, corrections: True
+2025-10-31 16:07:39,699 - app - INFO - [upload_1761907059697] File read completed in 0.00s - 57 characters
+2025-10-31 16:07:39,699 - app - INFO - [upload_1761907059697] Starting text processing (pipeline=True)...
+2025-10-31 16:07:39,720 - app - INFO - [upload_1761907059697] Text processing completed in 0.02s
+2025-10-31 16:07:39,720 - app - INFO - [upload_1761907059697] Computing VAD scores...
+2025-10-31 16:07:40,302 - app - INFO - [upload_1761907059697] VAD computation completed in 0.58s - 6 tokens
+2025-10-31 16:07:40,302 - app - INFO - [upload_1761907059697] Total request completed in 0.60s
+2025-10-31 16:07:40,302 - app - INFO - [upload_1761907059697] Generated 1 utterances
+2025-10-31 16:07:40,305 - app - INFO - [upload_1761907060305] Starting /upload-file request
+2025-10-31 16:07:40,305 - app - INFO - [upload_1761907060305] File: tamil.txt, pipeline: True, corrections: True
+2025-10-31 16:07:40,305 - app - INFO - [upload_1761907060305] File read completed in 0.00s - 57 characters
+2025-10-31 16:07:40,306 - app - INFO - [upload_1761907060305] Starting text processing (pipeline=True)...
+2025-10-31 16:07:40,326 - app - INFO - [upload_1761907060305] Text processing completed in 0.02s
+2025-10-31 16:07:40,326 - app - INFO - [upload_1761907060305] Computing VAD scores...
+2025-10-31 16:07:40,949 - app - INFO - [upload_1761907060305] VAD computation completed in 0.62s - 6 tokens
+2025-10-31 16:07:40,949 - app - INFO - [upload_1761907060305] Total request completed in 0.64s
+2025-10-31 16:07:40,949 - app - INFO - [upload_1761907060305] Generated 1 utterances
+2025-10-31 16:07:40,950 - app - INFO - [upload_1761907060950] Starting /upload-file request
+2025-10-31 16:07:40,950 - app - INFO - [upload_1761907060950] File: tamil.txt, pipeline: True, corrections: True
+2025-10-31 16:07:40,950 - app - INFO - [upload_1761907060950] File read completed in 0.00s - 57 characters
+2025-10-31 16:07:40,950 - app - INFO - [upload_1761907060950] Starting text processing (pipeline=True)...
+2025-10-31 16:07:40,971 - app - INFO - [upload_1761907060950] Text processing completed in 0.02s
+2025-10-31 16:07:40,971 - app - INFO - [upload_1761907060950] Computing VAD scores...
+2025-10-31 16:07:41,759 - app - INFO - [upload_1761907060950] VAD computation completed in 0.79s - 6 tokens
+2025-10-31 16:07:41,759 - app - INFO - [upload_1761907060950] Total request completed in 0.81s
+2025-10-31 16:07:41,761 - app - INFO - [upload_1761907060950] Generated 1 utterances
+2025-10-31 16:07:41,761 - app - INFO - [upload_1761907061761] Starting /upload-file request
+2025-10-31 16:07:41,761 - app - INFO - [upload_1761907061761] File: tamil.txt, pipeline: True, corrections: True
+2025-10-31 16:07:41,761 - app - INFO - [upload_1761907061761] File read completed in 0.00s - 57 characters
+2025-10-31 16:07:41,761 - app - INFO - [upload_1761907061761] Starting text processing (pipeline=True)...
+2025-10-31 16:07:41,782 - app - INFO - [upload_1761907061761] Text processing completed in 0.02s
+2025-10-31 16:07:41,782 - app - INFO - [upload_1761907061761] Computing VAD scores...
+2025-10-31 16:07:42,085 - app - INFO - [upload_1761907061761] VAD computation completed in 0.30s - 6 tokens
+2025-10-31 16:07:42,085 - app - INFO - [upload_1761907061761] Total request completed in 0.32s
+2025-10-31 16:07:42,085 - app - INFO - [upload_1761907061761] Generated 1 utterances
+2025-10-31 16:07:42,087 - app - INFO - [upload_1761907062087] Starting /upload-file request
+2025-10-31 16:07:42,087 - app - INFO - [upload_1761907062087] File: tamil.txt, pipeline: True, corrections: True
+2025-10-31 16:07:42,089 - app - INFO - [upload_1761907062087] File read completed in 0.00s - 57 characters
+2025-10-31 16:07:42,089 - app - INFO - [upload_1761907062087] Starting text processing (pipeline=True)...
+2025-10-31 16:07:42,108 - app - INFO - [upload_1761907062087] Text processing completed in 0.02s
+2025-10-31 16:07:42,108 - app - INFO - [upload_1761907062087] Computing VAD scores...
+2025-10-31 16:07:42,501 - app - INFO - [upload_1761907062087] VAD computation completed in 0.39s - 6 tokens
+2025-10-31 16:07:42,501 - app - INFO - [upload_1761907062087] Total request completed in 0.41s
+2025-10-31 16:07:42,501 - app - INFO - [upload_1761907062087] Generated 1 utterances
+2025-10-31 16:08:11,212 - app - INFO - [upload_1761907091212] Starting /upload-file request
+2025-10-31 16:08:11,212 - app - INFO - [upload_1761907091212] File: tamil.txt, pipeline: True, corrections: True
+2025-10-31 16:08:11,212 - app - INFO - [upload_1761907091212] File read completed in 0.00s - 57 characters
+2025-10-31 16:08:11,212 - app - INFO - [upload_1761907091212] Starting text processing (pipeline=True)...
+2025-10-31 16:08:11,238 - app - INFO - [upload_1761907091212] Text processing completed in 0.03s
+2025-10-31 16:08:11,239 - app - INFO - [upload_1761907091212] Computing VAD scores...
+2025-10-31 16:08:11,616 - app - INFO - [upload_1761907091212] VAD computation completed in 0.38s - 6 tokens
+2025-10-31 16:08:11,616 - app - INFO - [upload_1761907091212] Total request completed in 0.40s
+2025-10-31 16:08:11,618 - app - INFO - [upload_1761907091212] Generated 1 utterances
+2025-10-31 16:08:49,224 - app - INFO - [crawl_1761907129224] Starting /crawl request
+2025-10-31 16:08:49,224 - app - INFO - [crawl_1761907129224] URL: https://www.reddit.com/r/kollywood/comments/1okjkp2/same_doubt/, pipeline: True, corrections: True
+2025-10-31 16:08:49,225 - app - INFO - [crawl_1761907129224] Fetching Reddit submission...
+2025-10-31 16:08:49,225 - praw - WARNING - It appears that you are using PRAW in an asynchronous environment.
+It is strongly recommended to use Async PRAW: https://asyncpraw.readthedocs.io.
+See https://praw.readthedocs.io/en/latest/getting_started/multiple_instances.html#discord-bots-and-asynchronous-environments for more info.
+
+2025-10-31 16:08:50,677 - app - INFO - [crawl_1761907129224] Reddit fetch completed in 1.45s - 8 comments
+2025-10-31 16:08:50,677 - app - INFO - [crawl_1761907129224] Combined text length: 2515 characters
+2025-10-31 16:08:50,677 - app - INFO - [crawl_1761907129224] Starting text processing (pipeline=True)...
+2025-10-31 16:09:20,870 - app - INFO - [crawl_1761907129224] Text processing completed in 30.19s
+2025-10-31 16:09:20,870 - app - INFO - [crawl_1761907129224] Computing VAD scores...
+2025-10-31 16:09:21,041 - app - INFO - [crawl_1761907129224] VAD computation completed in 0.17s
+2025-10-31 16:09:21,041 - app - INFO - [crawl_1761907129224] Total request completed in 31.82s
+2025-10-31 16:09:21,041 - app - INFO - [crawl_1761907129224] Generated 7 utterances
+2025-10-31 16:11:08,641 - app - INFO - [crawl_1761907268641] Starting /crawl request
+2025-10-31 16:11:08,641 - app - INFO - [crawl_1761907268641] URL: https://www.reddit.com/r/tamilyapping/comments/1ok7jej/i_tried_smoking_once_thought_i_could_control_it/, pipeline: True, corrections: True
+2025-10-31 16:11:08,641 - app - INFO - [crawl_1761907268641] Fetching Reddit submission...
+2025-10-31 16:11:08,641 - praw - WARNING - It appears that you are using PRAW in an asynchronous environment.
+It is strongly recommended to use Async PRAW: https://asyncpraw.readthedocs.io.
+See https://praw.readthedocs.io/en/latest/getting_started/multiple_instances.html#discord-bots-and-asynchronous-environments for more info.
+
+2025-10-31 16:11:09,316 - app - INFO - [crawl_1761907268641] Reddit fetch completed in 0.68s - 32 comments
+2025-10-31 16:11:09,316 - app - INFO - [crawl_1761907268641] Combined text length: 5041 characters
+2025-10-31 16:11:09,317 - app - INFO - [crawl_1761907268641] Starting text processing (pipeline=True)...
+2025-10-31 16:12:01,571 - app - INFO - [crawl_1761907268641] Text processing completed in 52.25s
+2025-10-31 16:12:01,572 - app - INFO - [crawl_1761907268641] Computing VAD scores...
+2025-10-31 16:12:01,771 - app - INFO - [crawl_1761907268641] VAD computation completed in 0.20s
+2025-10-31 16:12:01,772 - app - INFO - [crawl_1761907268641] Total request completed in 53.13s
+2025-10-31 16:12:01,772 - app - INFO - [crawl_1761907268641] Generated 41 utterances
+2025-10-31 16:20:50,262 - app - INFO - [crawl_1761907850262] Starting /crawl request
+2025-10-31 16:20:50,263 - app - INFO - [crawl_1761907850262] URL: https://www.reddit.com/r/tamilyapping/comments/1ok7jej/i_tried_smoking_once_thought_i_could_control_it/, pipeline: True, corrections: True
+2025-10-31 16:20:50,263 - app - INFO - [crawl_1761907850262] Fetching Reddit submission...
+2025-10-31 16:20:50,265 - praw - WARNING - It appears that you are using PRAW in an asynchronous environment.
+It is strongly recommended to use Async PRAW: https://asyncpraw.readthedocs.io.
+See https://praw.readthedocs.io/en/latest/getting_started/multiple_instances.html#discord-bots-and-asynchronous-environments for more info.
+
+2025-10-31 16:20:51,677 - app - INFO - [crawl_1761907850262] Reddit fetch completed in 1.41s - 32 comments
+2025-10-31 16:20:51,677 - app - INFO - [crawl_1761907850262] Combined text length: 5041 characters
+2025-10-31 16:20:51,677 - app - INFO - [crawl_1761907850262] Starting text processing (pipeline=True)...
+2025-10-31 16:20:57,093 - app - INFO - [crawl_1761907850262] Text processing completed in 5.42s
+2025-10-31 16:20:57,094 - app - INFO - [crawl_1761907850262] Computing VAD scores...
+2025-10-31 16:20:57,558 - app - INFO - [crawl_1761907850262] VAD computation completed in 0.46s
+2025-10-31 16:20:57,559 - app - INFO - [crawl_1761907850262] Total request completed in 7.30s
+2025-10-31 16:20:57,559 - app - INFO - [crawl_1761907850262] Generated 41 utterances
+2025-10-31 16:22:35,340 - app - INFO - [crawl_1761907955340] Starting /crawl request
+2025-10-31 16:22:35,343 - app - INFO - [crawl_1761907955340] URL: https://www.reddit.com/r/tamilyapping/comments/1ogh4ep/idhuku_peru_cheating_dhaana/, pipeline: True, corrections: True
+2025-10-31 16:22:35,343 - app - INFO - [crawl_1761907955340] Fetching Reddit submission...
+2025-10-31 16:22:35,344 - praw - WARNING - It appears that you are using PRAW in an asynchronous environment.
+It is strongly recommended to use Async PRAW: https://asyncpraw.readthedocs.io.
+See https://praw.readthedocs.io/en/latest/getting_started/multiple_instances.html#discord-bots-and-asynchronous-environments for more info.
+
+2025-10-31 16:22:36,650 - app - INFO - [crawl_1761907955340] Reddit fetch completed in 1.31s - 124 comments
+2025-10-31 16:22:36,651 - app - INFO - [crawl_1761907955340] Combined text length: 27160 characters
+2025-10-31 16:22:36,651 - app - INFO - [crawl_1761907955340] Starting text processing (pipeline=True)...
+2025-10-31 16:29:42,461 - app - INFO - [crawl_1761907955340] Text processing completed in 425.81s
+2025-10-31 16:29:42,462 - app - INFO - [crawl_1761907955340] Computing VAD scores...
+2025-10-31 16:29:42,929 - app - INFO - [crawl_1761907955340] VAD computation completed in 0.47s
+2025-10-31 16:29:42,930 - app - INFO - [crawl_1761907955340] Total request completed in 427.59s
+2025-10-31 16:29:42,930 - app - INFO - [crawl_1761907955340] Generated 153 utterances

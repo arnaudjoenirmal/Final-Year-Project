@@ -2,7 +2,7 @@ from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 import io
 import os
 import sys
@@ -28,6 +28,7 @@ from tamil_pipeline import clean_tamil_pipeline
 from vad import aggregate_vad, get_vad_from_tamil, per_token_vad
 
 from reddit_crawler import fetch_submission_text
+from phq.semantic_phq9_analyzer import SemanticPHQ9Analyzer
 
 app = FastAPI(title="Tamil Transliteration + VAD API")
 
@@ -50,6 +51,14 @@ app.add_middleware(
     allow_methods=["*"],  # Allows all methods including OPTIONS
     allow_headers=["*"],  # Allows all headers
 )
+
+# Initialize PHQ-9 analyzer (do this once at startup)
+try:
+    phq9_analyzer = SemanticPHQ9Analyzer()
+    logger.info("PHQ-9 analyzer initialized successfully")
+except Exception as e:
+    logger.error(f"Failed to initialize PHQ-9 analyzer: {e}")
+    phq9_analyzer = None
 
 def pretty_json_response(data):
     """Return a pretty-printed JSON response for better readability"""
@@ -149,6 +158,41 @@ async def crawl_and_process(url: str = Form(None),
     vad_time = time.time() - vad_start
     logger.info(f"[{request_id}] VAD computation completed in {vad_time:.2f}s")
 
+    # Add PHQ-9 analysis if analyzer is available
+    phq9_data = None
+    if phq9_analyzer and vad_results:
+        try:
+            # Extract sentences from VAD results
+            utterances_for_phq9 = [item['sentence'] for item in vad_results]
+            
+            if utterances_for_phq9:
+                logger.info(f"[{request_id}] Computing PHQ-9 scores...")
+                phq9_start = time.time()
+                
+                phq9_scores = phq9_analyzer.analyze_utterances(
+                    utterances_for_phq9,
+                    normalize=True,
+                    phq_scale=False
+                )
+                
+                phq9_total = phq9_analyzer.get_phq9_total(phq9_scores)
+                phq9_severity = phq9_analyzer.interpret_severity(phq9_total, phq_scale=False)
+                phq9_radar = phq9_analyzer.get_radar_data(phq9_scores)
+                
+                phq9_time = time.time() - phq9_start
+                
+                phq9_data = {
+                    "scores": phq9_scores,
+                    "total": phq9_total,
+                    "severity": phq9_severity,
+                    "radar_data": phq9_radar,
+                    "processing_time_seconds": round(phq9_time, 3)
+                }
+                
+                logger.info(f"[{request_id}] PHQ-9 analysis completed: {phq9_severity} ({phq9_total:.2f})")
+        except Exception as e:
+            logger.error(f"[{request_id}] PHQ-9 analysis failed: {e}")
+
     total_time = time.time() - start_time
     logger.info(f"[{request_id}] Total request completed in {total_time:.2f}s")
 
@@ -156,6 +200,7 @@ async def crawl_and_process(url: str = Form(None),
         "post": submission["post"],
         "num_comments": len(submission["comments"]),
         "vad": vad_results,
+        "phq9": phq9_data,
         "transliteration_sample": translit[:500],
         "pipeline_used": "unified" if use_pipeline else "legacy",
         "processing_time": {
@@ -274,6 +319,41 @@ async def upload_file(file: UploadFile = File(...),
     tokens = per_token_vad(translit)
     vad_time = time.time() - vad_start
     logger.info(f"[{request_id}] VAD computation completed in {vad_time:.2f}s - {len(tokens)} tokens")
+
+    # PHQ-9 analysis
+    phq9_data = None
+    if phq9_analyzer and vad_results:
+        try:
+            # Extract sentences from VAD results
+            utterances_for_phq9 = [item['sentence'] for item in vad_results]
+            
+            if utterances_for_phq9:
+                logger.info(f"[{request_id}] Computing PHQ-9 scores...")
+                phq9_start = time.time()
+                
+                phq9_scores = phq9_analyzer.analyze_utterances(
+                    utterances_for_phq9,
+                    normalize=True,
+                    phq_scale=False
+                )
+                
+                phq9_total = phq9_analyzer.get_phq9_total(phq9_scores)
+                phq9_severity = phq9_analyzer.interpret_severity(phq9_total, phq_scale=False)
+                phq9_radar = phq9_analyzer.get_radar_data(phq9_scores)
+                
+                phq9_time = time.time() - phq9_start
+                
+                phq9_data = {
+                    "scores": phq9_scores,
+                    "total": phq9_total,
+                    "severity": phq9_severity,
+                    "radar_data": phq9_radar,
+                    "processing_time_seconds": round(phq9_time, 3)
+                }
+                
+                logger.info(f"[{request_id}] PHQ-9 analysis completed: {phq9_severity} ({phq9_total:.2f})")
+        except Exception as e:
+            logger.error(f"[{request_id}] PHQ-9 analysis failed: {e}")
 
     total_time = time.time() - start_time
     logger.info(f"[{request_id}] Total request completed in {total_time:.2f}s")
@@ -494,13 +574,82 @@ async def debug_transliterate(file: UploadFile = File(None), text: str = Form(No
     return pretty_json_response(result)
 
 
-def contains_tamil(text: str) -> bool:
-    """Return True if the string contains at least one character from the Tamil script."""
-    for ch in text:
-        try:
-            if 'TAMIL' in unicodedata.name(ch):
-                return True
-        except ValueError:
-            # Some control chars may not have a name
-            continue
-    return False
+@app.post("/analyze-phq9")
+async def analyze_phq9_endpoint(
+    utterances: List[str] = Form(...),
+    normalize: bool = Form(True),
+    phq_scale: bool = Form(False)
+):
+    """
+    Analyze utterances for PHQ-9 depression indicators using semantic similarity.
+    
+    Args:
+        utterances: List of text utterances (JSON array as string or actual list)
+        normalize: If True, normalize scores to 0-1 range (default: True)
+        phq_scale: If True, convert to PHQ-9's 0-3 scale (default: False)
+    
+    Returns:
+        JSON with PHQ-9 scores, total score, severity, and radar chart data
+    """
+    start_time = time.time()
+    request_id = f"phq9_{int(time.time() * 1000)}"
+    
+    logger.info(f"[{request_id}] Starting /analyze-phq9 request")
+    logger.info(f"[{request_id}] Utterances: {len(utterances)}, normalize: {normalize}, phq_scale: {phq_scale}")
+    
+    if not phq9_analyzer:
+        logger.error(f"[{request_id}] PHQ-9 analyzer not initialized")
+        return {"error": "PHQ-9 analyzer not available"}
+    
+    if not utterances:
+        logger.error(f"[{request_id}] No utterances provided")
+        return {"error": "utterances are required"}
+    
+    try:
+        # Analyze utterances
+        analysis_start = time.time()
+        scores = phq9_analyzer.analyze_utterances(
+            utterances,
+            normalize=normalize,
+            phq_scale=phq_scale
+        )
+        analysis_time = time.time() - analysis_start
+        
+        # Calculate total and severity
+        total_score = phq9_analyzer.get_phq9_total(scores)
+        severity = phq9_analyzer.interpret_severity(total_score, phq_scale=phq_scale)
+        
+        # Get radar data (always use normalized for radar)
+        if phq_scale:
+            # Convert back to normalized for radar
+            normalized_scores = {q: s/3 for q, s in scores.items()}
+        else:
+            normalized_scores = scores
+        
+        radar_data = phq9_analyzer.get_radar_data(normalized_scores)
+        
+        total_time = time.time() - start_time
+        logger.info(f"[{request_id}] PHQ-9 analysis completed in {total_time:.2f}s")
+        logger.info(f"[{request_id}] Total score: {total_score:.2f}, Severity: {severity}")
+        
+        result = {
+            "phq9_scores": scores,
+            "phq9_total": total_score,
+            "phq9_severity": severity,
+            "radar_data": radar_data,
+            "scale": "phq9" if phq_scale else "normalized",
+            "processing_time": {
+                "analysis_time_seconds": round(analysis_time, 3),
+                "total_time_seconds": round(total_time, 3)
+            },
+            "stats": {
+                "num_utterances": len(utterances),
+                "timestamp": datetime.now().isoformat()
+            }
+        }
+        
+        return pretty_json_response(result)
+        
+    except Exception as e:
+        logger.error(f"[{request_id}] Error during PHQ-9 analysis: {e}")
+        return {"error": str(e)}

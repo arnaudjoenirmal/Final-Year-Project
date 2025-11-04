@@ -121,3 +121,54 @@ See https://praw.readthedocs.io/en/latest/getting_started/multiple_instances.htm
 2025-10-31 16:29:42,929 - app - INFO - [crawl_1761907955340] VAD computation completed in 0.47s
 2025-10-31 16:29:42,930 - app - INFO - [crawl_1761907955340] Total request completed in 427.59s
 2025-10-31 16:29:42,930 - app - INFO - [crawl_1761907955340] Generated 153 utterances
+2025-11-04 19:55:09,560 - app - INFO - [upload_1762266309560] Starting /upload-file request
+2025-11-04 19:55:09,562 - app - INFO - [upload_1762266309560] File: Sample text.txt, pipeline: True, corrections: True
+2025-11-04 19:55:09,563 - app - INFO - [upload_1762266309560] File read completed in 0.00s - 100 characters
+2025-11-04 19:55:09,564 - app - INFO - [upload_1762266309560] Starting text processing (pipeline=True)...
+2025-11-04 19:55:12,054 - app - INFO - [upload_1762266309560] Text processing completed in 2.49s
+2025-11-04 19:55:12,055 - app - INFO - [upload_1762266309560] Computing VAD scores...
+2025-11-04 19:55:13,446 - app - INFO - [upload_1762266309560] VAD computation completed in 1.39s - 19 tokens
+2025-11-04 19:55:13,447 - app - INFO - [upload_1762266309560] Total request completed in 3.89s
+2025-11-04 19:55:13,447 - app - INFO - [upload_1762266309560] Generated 1 utterances
+2025-11-04 23:16:10,240 - app - INFO - [crawl_1762278370239] Starting /crawl request
+2025-11-04 23:16:10,249 - app - INFO - [crawl_1762278370239] URL: https://www.reddit.com/r/tamilyapping/comments/1on8f7f/yarku_achi_epdi_thoniruka/, pipeline: True, corrections: True
+2025-11-04 23:16:10,250 - app - INFO - [crawl_1762278370239] Fetching Reddit submission...
+2025-11-04 23:16:10,262 - praw - WARNING - It appears that you are using PRAW in an asynchronous environment.
+It is strongly recommended to use Async PRAW: https://asyncpraw.readthedocs.io.
+See https://praw.readthedocs.io/en/latest/getting_started/multiple_instances.html#discord-bots-and-asynchronous-environments for more info.
+
+2025-11-04 23:16:13,251 - app - INFO - [crawl_1762278370239] Reddit fetch completed in 3.00s - 87 comments
+2025-11-04 23:16:13,255 - app - INFO - [crawl_1762278370239] Combined text length: 10147 characters
+2025-11-04 23:16:13,256 - app - INFO - [crawl_1762278370239] Starting text processing (pipeline=True)...
+2025-11-04 23:20:05,446 - app - INFO - [crawl_1762278370239] Text processing completed in 232.19s
+2025-11-04 23:20:05,446 - app - INFO - [crawl_1762278370239] Computing VAD scores...
+2025-11-04 23:20:05,958 - app - INFO - [crawl_1762278370239] VAD computation completed in 0.51s
+2025-11-04 23:20:05,958 - app - INFO - [crawl_1762278370239] Total request completed in 235.72s
+2025-11-04 23:20:05,959 - app - INFO - [crawl_1762278370239] Generated 34 utterances
+2025-11-04 23:55:51,756 - app - INFO - [crawl_1762280751755] Starting /crawl request
+2025-11-04 23:55:51,759 - app - INFO - [crawl_1762280751755] URL: https://www.reddit.com/r/tamilyapping/comments/1oh7qr4/so_guys_had_my_first_kudi_yesterday/, pipeline: True, corrections: True
+2025-11-04 23:55:51,759 - app - INFO - [crawl_1762280751755] Fetching Reddit submission...
+2025-11-04 23:55:51,764 - praw - WARNING - It appears that you are using PRAW in an asynchronous environment.
+It is strongly recommended to use Async PRAW: https://asyncpraw.readthedocs.io.
+See https://praw.readthedocs.io/en/latest/getting_started/multiple_instances.html#discord-bots-and-asynchronous-environments for more info.
+
+2025-11-04 23:55:52,930 - app - INFO - [crawl_1762280751755] Reddit fetch completed in 1.17s - 9 comments
+2025-11-04 23:55:52,930 - app - INFO - [crawl_1762280751755] Combined text length: 2606 characters
+2025-11-04 23:55:52,930 - app - INFO - [crawl_1762280751755] Starting text processing (pipeline=True)...
+2025-11-04 23:56:28,544 - app - INFO - [crawl_1762280751755] Text processing completed in 35.61s
+2025-11-04 23:56:28,545 - app - INFO - [crawl_1762280751755] Computing VAD scores...
+2025-11-04 23:56:28,944 - app - INFO - [crawl_1762280751755] VAD computation completed in 0.40s
+2025-11-04 23:56:28,945 - app - INFO - [crawl_1762280751755] Total request completed in 37.19s
+2025-11-04 23:56:28,945 - app - INFO - [crawl_1762280751755] Generated 20 utterances
+2025-11-05 00:13:54,383 - app - ERROR - Failed to initialize PHQ-9 analyzer: [Errno 2] No such file or directory: 'D:\\Final-Year-Project\\BackEnd\\phq\\phq\\phq_templates.json'
+2025-11-05 00:43:07,042 - sentence_transformers.SentenceTransformer - INFO - Use pytorch device_name: cpu
+2025-11-05 00:43:07,043 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: paraphrase-multilingual-MiniLM-L12-v2
+2025-11-05 00:43:12,262 - app - INFO - PHQ-9 analyzer initialized successfully
+2025-11-05 00:43:24,698 - app - INFO - [phq9_1762283604698] Starting /analyze-phq9 request
+2025-11-05 00:43:24,699 - app - INFO - [phq9_1762283604698] Utterances: 3, normalize: True, phq_scale: False
+2025-11-05 00:43:24,838 - app - INFO - [phq9_1762283604698] PHQ-9 analysis completed in 0.14s
+2025-11-05 00:43:24,839 - app - INFO - [phq9_1762283604698] Total score: 8.18, Severity: Severe
+2025-11-05 00:43:24,841 - app - INFO - [phq9_1762283604841] Starting /analyze-phq9 request
+2025-11-05 00:43:24,841 - app - INFO - [phq9_1762283604841] Utterances: 3, normalize: True, phq_scale: False
+2025-11-05 00:43:24,935 - app - INFO - [phq9_1762283604841] PHQ-9 analysis completed in 0.09s
+2025-11-05 00:43:24,935 - app - INFO - [phq9_1762283604841] Total score: 8.18, Severity: Severe

@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   LineChart,
   PieChart,
   BarChart,
   RadarChart,
-  ScatterChart,
 } from "@mui/x-charts";
+import { usePHQ9Analyzer } from "../hooks/usePHQ9Analyzer";
 
 interface VADData {
   sentence: string;
@@ -52,6 +52,10 @@ interface Props {
 }
 
 export default function DepressionInsightDashboard({ crawlData, uploadedData }: Props) {
+  // PHQ-9 Analyzer Hook
+  const { analyzePHQ9, loading: phq9Loading, error: phq9Error, result: phq9Result } = usePHQ9Analyzer();
+  const [showPHQ9Analysis, setShowPHQ9Analysis] = useState(false);
+
   // Depression anchor vectors (rescaled to 1-9 range)
   const ANCHORS = [
     { label: "sadness", v: 1.416, a: 3.304, d: 2.312 },
@@ -139,20 +143,6 @@ export default function DepressionInsightDashboard({ crawlData, uploadedData }: 
   const avgDepressionScore = depressionScoresData.length > 0
     ? depressionScoresData.reduce((sum, d) => sum + d.depressionScore, 0) / depressionScoresData.length
     : 0;
-
-  // Count severity levels for bar chart
-  const severityCounts = depressionScoresData.reduce((acc, item) => {
-    acc[item.severity] = (acc[item.severity] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
-
-  const intensityLevels = [
-    { level: "Minimal", count: severityCounts["Minimal"] || 0 },
-    { level: "Mild", count: severityCounts["Mild"] || 0 },
-    { level: "Moderate", count: severityCounts["Moderate"] || 0 },
-    { level: "Severe", count: severityCounts["Severe"] || 0 },
-  ];
-
   // Normalize VAD values to 0-1 range for charts
   const normalizeVAD = (value: number) => (value - 1) / 8;
 
@@ -187,26 +177,53 @@ export default function DepressionInsightDashboard({ crawlData, uploadedData }: 
       }
     : { valence: 0.6, arousal: 0.5, dominance: 0.7 };
 
-  const radarDataVAD = [
-    avgVAD.valence,
-    avgVAD.arousal,
-    avgVAD.dominance,
-    avgDepressionScore / 100, // Normalized depression score
-    1 - avgVAD.arousal, // Fatigue (inverse of arousal)
-    1 - avgVAD.dominance, // Anxiety (inverse of dominance)
-  ];
+  // Extract all utterances for PHQ-9 analysis
+  const getAllUtterances = (): string[] => {
+    const utterances: string[] = [];
+    
+    // From crawl data
+    if (crawlData?.vad) {
+      utterances.push(...crawlData.vad.map(v => v.sentence));
+    }
+    
+    // From uploaded files
+    if (uploadedData) {
+      uploadedData.forEach(data => {
+        if (data?.vad) {
+          utterances.push(...data.vad.map(v => v.sentence));
+        }
+      });
+    }
+    
+    return utterances.filter(u => u && u.trim().length > 0);
+  };
 
-  const radarDataPHQ9 = [0.5, 0.6, 0.5, 0.7, 0.6, 0.4]; // Placeholder - can be replaced with actual PHQ-9
-  const radarMetrics = [
+  // Auto-analyze PHQ-9 on component mount if data is available
+  useEffect(() => {
+    const utterances = getAllUtterances();
+    if (utterances.length > 0 && !phq9Result && !phq9Loading) {
+      console.log('[Dashboard] Auto-analyzing PHQ-9 scores...');
+      analyzePHQ9(utterances);
+    }
+  }, [crawlData, uploadedData]); // Re-run if data changes
+
+  // Update radar data when PHQ-9 results are available
+  const radarMetrics = phq9Result?.radar_data.metrics || [
     "Valence", "Arousal", "Dominance", "Depression", "Fatigue", "Anxiety",
   ];
 
-  // Scatter Chart Data - VAD correlation
-  const scatterData = depressionScoresData.map(d => ({
-    x: normalizeVAD(d.arousal),
-    y: normalizeVAD(d.valence),
-    confidence: d.depressionScore / 100,
-  }));
+  const radarDataVAD = phq9Result?.radar_data.values || [
+    avgVAD.valence,
+    avgVAD.arousal,
+    avgVAD.dominance,
+    avgDepressionScore / 100,
+    1 - avgVAD.arousal,
+    1 - avgVAD.dominance,
+  ];
+
+  // PHQ-9 baseline data (normalized healthy baseline values)
+  const radarDataPHQ9 = phq9Result ? radarMetrics.map(() => 0.5) : [0.5, 0.5, 0.5, 0.2, 0.3, 0.3];
+
 
   // All chart configurations
   const chartConfigs = [
@@ -252,18 +269,6 @@ export default function DepressionInsightDashboard({ crawlData, uploadedData }: 
       ),
     },
     {
-      key: "bar",
-      label: "Depression Severity Distribution",
-      render: () => (
-        <BarChart
-          dataset={intensityLevels}
-          xAxis={[{ scaleType: "band", dataKey: "level", label: "Severity Level" }]}
-          series={[{ dataKey: "count", label: "Count", color: "#1976d2" }]}
-          height={400}
-        />
-      ),
-    },
-    {
       key: "pie",
       label: "Depression Type Distribution",
       render: () => (
@@ -287,38 +292,37 @@ export default function DepressionInsightDashboard({ crawlData, uploadedData }: 
         />
       ),
     },
+  ];
+
+  // Add PHQ-9 specific chart
+  const phq9ChartConfigs = phq9Result ? [
     {
-      key: "scatter",
-      label: "Valence vs Arousal (Depression Intensity)",
+      key: "phq9-scores",
+      label: "PHQ-9 Question Scores",
       render: () => (
-        <ScatterChart
-          xAxis={[{ label: "Arousal Level", min: 0, max: 1 }]}
-          yAxis={[{ label: "Valence Level", min: 0, max: 1 }]}
-          series={[{
-            data: scatterData.length > 0 ? scatterData.map((d) => ({ 
-              x: d.x, 
-              y: d.y, 
-              size: d.confidence * 30 // Bubble size = depression score
-            })) : [
-              { x: 0.3, y: 0.4, size: 20 },
-              { x: 0.5, y: 0.6, size: 25 },
-              { x: 0.7, y: 0.5, size: 15 },
-            ],
-            label: "Depression Intensity",
-            color: "#ff7043",
-          }]}
+        <BarChart
+          dataset={Object.entries(phq9Result.phq9_scores).map(([q, score]) => ({
+            question: q,
+            score: score,
+          }))}
+          xAxis={[{ scaleType: "band", dataKey: "question", label: "PHQ-9 Question" }]}
+          yAxis={[{ label: "Score (0-1)", min: 0, max: 1 }]}
+          series={[{ dataKey: "score", label: "Score", color: "#9c27b0" }]}
           height={400}
         />
       ),
     },
-  ];
+  ] : [];
+
+  // Combine all charts
+  const allChartConfigs = [...chartConfigs, ...phq9ChartConfigs];
 
   const [enlargedChart, setEnlargedChart] = useState<string | null>(null);
 
   return (
     <div style={{ width: "100%" }}>
-      {/* Depression Score Summary */}
-      {depressionScoresData.length > 0 && (
+      {/* PHQ-9 Loading/Error State */}
+      {phq9Loading && (
         <div
           style={{
             background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
@@ -329,17 +333,162 @@ export default function DepressionInsightDashboard({ crawlData, uploadedData }: 
             textAlign: "center",
           }}
         >
-          <h2 style={{ margin: 0, fontSize: "2rem", fontWeight: 700 }}>
-            Average Depression Score
-          </h2>
-          <p style={{ fontSize: "4rem", fontWeight: 900, margin: "16px 0" }}>
-            {avgDepressionScore.toFixed(1)}
-          </p>
-          <p style={{ fontSize: "1.5rem", fontWeight: 600, margin: 0 }}>
-            Severity: {getDepressionSeverity(avgDepressionScore)}
-          </p>
-          <p style={{ fontSize: "1rem", opacity: 0.9, marginTop: "12px" }}>
-            Based on {depressionScoresData.length} analyzed utterances
+          <h3>🧠 Analyzing PHQ-9 Scores...</h3>
+          <p>Computing semantic similarity with depression indicators...</p>
+        </div>
+      )}
+
+      {phq9Error && (
+        <div
+          style={{
+            background: "#f44336",
+            borderRadius: "16px",
+            padding: "24px",
+            marginBottom: "24px",
+            color: "#fff",
+            textAlign: "center",
+          }}
+        >
+          <h3>❌ PHQ-9 Analysis Error</h3>
+          <p>{phq9Error}</p>
+        </div>
+      )}
+
+      {/* Score Summary Cards - Now in 2-column grid matching chart layout */}
+      {(phq9Result || depressionScoresData.length > 0) && (
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: "24px",
+            padding: "24px",
+            background: "rgba(255,255,255,0.05)",
+            borderRadius: "16px",
+            marginBottom: "24px",
+          }}
+        >
+          {/* PHQ-9 Score Summary - Left Column */}
+          {phq9Result && (
+            <div
+              style={{
+                background: "linear-gradient(135deg, #9c27b0 0%, #673ab7 100%)",
+                borderRadius: "16px",
+                padding: "32px 24px",
+                color: "#fff",
+                textAlign: "center",
+                cursor: "pointer",
+                transition: "transform 0.2s, box-shadow 0.2s",
+                boxShadow: "0 2px 8px rgba(31,38,135,0.12)",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+                minHeight: "300px",
+              }}
+              onClick={() => setShowPHQ9Analysis(!showPHQ9Analysis)}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-4px)";
+                e.currentTarget.style.boxShadow = "0 8px 16px rgba(156,39,176,0.3)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "0 2px 8px rgba(31,38,135,0.12)";
+              }}
+            >
+              <h2 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700 }}>
+                🧠 PHQ-9 Semantic Analysis
+              </h2>
+              <p style={{ fontSize: "4rem", fontWeight: 900, margin: "24px 0" }}>
+                {phq9Result.phq9_total.toFixed(2)}
+              </p>
+              <p style={{ fontSize: "1.5rem", fontWeight: 600, margin: 0 }}>
+                Severity: {phq9Result.phq9_severity}
+              </p>
+              <p style={{ fontSize: "0.9rem", opacity: 0.9, marginTop: "16px" }}>
+                Based on semantic similarity with {phq9Result.stats?.num_utterances} utterances
+              </p>
+              <p style={{ fontSize: "0.8rem", opacity: 0.7, marginTop: "12px" }}>
+                Click to {showPHQ9Analysis ? 'hide' : 'show'} detailed scores
+              </p>
+            </div>
+          )}
+
+          {/* VAD-Based Depression Score - Right Column */}
+          {depressionScoresData.length > 0 && (
+            <div
+              style={{
+                background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                borderRadius: "16px",
+                padding: "32px 24px",
+                color: "#fff",
+                textAlign: "center",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+                minHeight: "300px",
+                boxShadow: "0 2px 8px rgba(31,38,135,0.12)",
+              }}
+            >
+              <h2 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700 }}>
+                📊 VAD-Based Depression Score
+              </h2>
+              <p style={{ fontSize: "4rem", fontWeight: 900, margin: "24px 0" }}>
+                {avgDepressionScore.toFixed(1)}
+              </p>
+              <p style={{ fontSize: "1.5rem", fontWeight: 600, margin: 0 }}>
+                Severity: {getDepressionSeverity(avgDepressionScore)}
+              </p>
+              <p style={{ fontSize: "1rem", opacity: 0.9, marginTop: "16px" }}>
+                Based on {depressionScoresData.length} analyzed utterances
+              </p>
+            </div>
+          )}
+
+          {/* If only one score card exists, center it */}
+          {!phq9Result && depressionScoresData.length > 0 && (
+            <div></div> // Empty spacer to maintain grid
+          )}
+          {phq9Result && depressionScoresData.length === 0 && (
+            <div></div> // Empty spacer to maintain grid
+          )}
+        </div>
+      )}
+
+      {/* PHQ-9 Detailed Scores (Collapsible) */}
+      {showPHQ9Analysis && phq9Result && (
+        <div
+          style={{
+            background: "#fff",
+            borderRadius: "16px",
+            padding: "24px",
+            marginBottom: "24px",
+            boxShadow: "0 4px 16px rgba(0,0,0,0.1)",
+          }}
+        >
+          <h3 style={{ color: "#333", marginBottom: "16px" }}>
+            PHQ-9 Question Scores
+          </h3>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "16px" }}>
+            {Object.entries(phq9Result.phq9_scores).map(([question, score]) => (
+              <div
+                key={question}
+                style={{
+                  background: "#f5f5f5",
+                  borderRadius: "8px",
+                  padding: "16px",
+                  textAlign: "center",
+                }}
+              >
+                <p style={{ color: "#666", margin: "0 0 8px 0", fontSize: "0.9rem" }}>
+                  {question}
+                </p>
+                <p style={{ color: "#9c27b0", fontSize: "1.5rem", fontWeight: 700, margin: 0 }}>
+                  {(score * 100).toFixed(1)}%
+                </p>
+              </div>
+            ))}
+          </div>
+          <p style={{ color: "#666", fontSize: "0.85rem", marginTop: "16px", textAlign: "center" }}>
+            Scores represent semantic similarity to PHQ-9 depression indicators (0-100%)
           </p>
         </div>
       )}
@@ -356,7 +505,7 @@ export default function DepressionInsightDashboard({ crawlData, uploadedData }: 
           position: "relative",
         }}
       >
-        {chartConfigs.map((chart) => (
+        {allChartConfigs.map((chart) => (
           <div
             key={chart.key}
             style={{
@@ -426,7 +575,7 @@ export default function DepressionInsightDashboard({ crawlData, uploadedData }: 
               Close
             </button>
             <h2 style={{ color: "#222", marginBottom: "1rem" }}>
-              {chartConfigs.find((c) => c.key === enlargedChart)?.label}
+              {allChartConfigs.find((c) => c.key === enlargedChart)?.label}
             </h2>
             <div
               style={{
@@ -435,7 +584,7 @@ export default function DepressionInsightDashboard({ crawlData, uploadedData }: 
                 padding: "16px",
               }}
             >
-              {chartConfigs.find((c) => c.key === enlargedChart)?.render()}
+              {allChartConfigs.find((c) => c.key === enlargedChart)?.render()}
             </div>
           </div>
         </div>

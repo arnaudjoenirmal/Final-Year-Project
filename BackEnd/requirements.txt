@@ -7,3 +7,6 @@ googletrans==4.0.0-rc1
 nltk
 python-multipart
 rapidfuzz
+sentence-transformers
+torch
+transformers

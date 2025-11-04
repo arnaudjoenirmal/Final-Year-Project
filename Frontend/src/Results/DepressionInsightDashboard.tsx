@@ -269,6 +269,18 @@ export default function DepressionInsightDashboard({ crawlData, uploadedData }: 
       ),
     },
     {
+      key: "utterance-bar",
+      label: "Utterance-wise Valence (Bar)",
+      render: () => (
+        <BarChart
+          dataset={vadData}
+          xAxis={[{ dataKey: "utterance", label: "Utterance Index" }]}
+          series={[{ dataKey: "valence", label: "Valence", color: "#4caf50" }]}
+          height={400}
+        />
+      ),
+    },
+    {
       key: "pie",
       label: "Depression Type Distribution",
       render: () => (

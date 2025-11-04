@@ -155,6 +155,10 @@ async def crawl_and_process(url: str = Form(None),
     vad_start = time.time()
     logger.info(f"[{request_id}] Computing VAD scores...")
     vad_results = aggregate_vad(translit, get_vad_from_tamil)
+    # Add this debug statement:
+    logger.info(f"[{request_id}] VAD results type: {type(vad_results)}, length: {len(vad_results) if isinstance(vad_results, list) else 'N/A'}")
+    if isinstance(vad_results, list) and len(vad_results) > 0:
+        logger.info(f"[{request_id}] First VAD result: {vad_results[0]}")
     vad_time = time.time() - vad_start
     logger.info(f"[{request_id}] VAD computation completed in {vad_time:.2f}s")
 
@@ -217,12 +221,26 @@ async def crawl_and_process(url: str = Form(None),
         }
     }
     
-    # Add utterances if using pipeline
+    # After processing text and getting metadata
     if use_pipeline and metadata.get('utterances'):
-        result["utterances"] = metadata['utterances']
-        result["utterance_count"] = len(metadata['utterances'])
-        logger.info(f"[{request_id}] Generated {len(metadata['utterances'])} utterances")
-    
+        utterances = metadata['utterances']
+        # Compute VAD for each utterance individually:
+        vad_results = [aggregate_vad(utt, get_vad_from_tamil, prebatch=True)[0] for utt in utterances]
+
+        # Add utterances and VAD results to your response:
+        result["vad"] = vad_results
+        result["utterances"] = utterances
+        result["utterance_count"] = len(utterances)
+        logger.info(f"[{request_id}] Generated {len(utterances)} utterances")
+    else:
+        # Fallback: treat the whole text as one utterance
+        utterances = [translit]
+        vad_results = aggregate_vad(translit, get_vad_from_tamil, prebatch=True)
+        result["vad"] = vad_results
+        result["utterances"] = utterances
+        result["utterance_count"] = 1
+        logger.info(f"[{request_id}] Only one utterance (fallback)")
+
     return pretty_json_response(result)
 
 
@@ -380,10 +398,31 @@ async def upload_file(file: UploadFile = File(...),
     
     # Add utterances if using pipeline
     if use_pipeline and metadata.get('utterances'):
-        result["utterances"] = metadata['utterances']
-        result["utterance_count"] = len(metadata['utterances'])
-        logger.info(f"[{request_id}] Generated {len(metadata['utterances'])} utterances")
-    
+        utterances = metadata['utterances']
+        # Compute VAD for each utterance using aggregate_vad:
+        vad_results = aggregate_vad('\n'.join(utterances), get_vad_from_tamil, prebatch=True)
+
+        # Add utterances and VAD results to your response:
+        result["vad"] = vad_results
+        result["utterances"] = utterances
+        result["utterance_count"] = len(utterances)
+        logger.info(f"[{request_id}] Generated {len(utterances)} utterances")
+        
+        # If you have utterances, always use them for VAD
+        if use_pipeline and metadata.get('utterances'):
+            utterances = metadata['utterances']
+            vad_results = aggregate_vad('\n'.join(utterances), get_vad_from_tamil, prebatch=True)
+            result["utterances"] = utterances
+            result["utterance_count"] = len(utterances)
+            logger.info(f"[{request_id}] Generated {len(utterances)} utterances")
+        else:
+            # Fallback: treat the whole text as one utterance
+            utterances = [translit]
+            vad_results = aggregate_vad(translit, get_vad_from_tamil, prebatch=True)
+            result["utterances"] = utterances
+            result["utterance_count"] = 1
+            logger.info(f"[{request_id}] Only one utterance (fallback)")
+        result["vad"] = vad_results
     return pretty_json_response(result)
 
 

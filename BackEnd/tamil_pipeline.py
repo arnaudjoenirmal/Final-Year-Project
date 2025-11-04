@@ -25,28 +25,20 @@ _translation_cache = {}
 
 def split_into_utterances_tamil(text: str, debug: bool = False) -> List[str]:
     """
-    Split Tamil text into clean, natural utterances for better readability and VAD processing.
-    
-    Process:
-        1. Remove noisy tokens (URLs, media links, reddit.com, youtube.com, .jpg, .png, etc.)
-        2. Split on sentence delimiters (. ? ! : ;)
-        3. Split on Tamil conjunctions (ஆனால், அதனால், எனவே, அப்படின்னா, etc.)
-        4. Filter out fragments shorter than 3 words (unless punctuation ends it)
-        5. Clean and normalize whitespace
-    
-    Args:
-        text: Tamil text to split
-        debug: Enable debug logging
-        
-    Returns:
-        List of clean Tamil utterances
+    More aggressive utterance segmentation:
+    - treat newlines and commas as sentence boundaries
+    - split on common Tamil conjunctions
+    - chunk long segments into max_words
+    - allow short utterances >= 2 words
     """
+    import re
+
     if not text or not text.strip():
         return []
-    
+
     if debug:
         print(f"\n[UTTERANCE SPLIT] Input: {text}")
-    
+
     # Step 1: Remove noisy tokens (URLs, media links, file extensions)
     noise_patterns = [
         r'https?://[^\s]+',           # URLs
@@ -60,36 +52,36 @@ def split_into_utterances_tamil(text: str, debug: bool = False) -> List[str]:
         r'u/[^\s]+',                   # Reddit usernames
         r'r/[^\s]+',                   # Reddit subreddits
     ]
-    
+
     cleaned_text = text
     for pattern in noise_patterns:
         cleaned_text = re.sub(pattern, '', cleaned_text, flags=re.IGNORECASE)
-    
-    if debug and cleaned_text != text:
-        print(f"[UTTERANCE SPLIT] After noise removal: {cleaned_text}")
-    
+
+    # Normalize whitespace and treat newlines as sentence breaks
+    cleaned_text = cleaned_text.replace('\r', ' ')
+    cleaned_text = re.sub(r'\n+', '. ', cleaned_text)
+    cleaned_text = re.sub(r'\s+', ' ', cleaned_text).strip()
+
     # Step 2: Define Tamil conjunctions and delimiters
     tamil_conjunctions = [
         'ஆனால்', 'அதனால்', 'எனவே', 'அப்படின்னா', 'அப்புறம்',
         'பிறகு', 'மேலும்', 'அதோடு', 'அதுமட்டுமல்லாமல்',
         'ஆனா', 'அதான்', 'அப்போ', 'இப்போ', 'சரி',
-        'ஆனல', 'அதனல', 'பறக', 'மலம',  # Variations without pulli
+        'ஆனல', 'அதனல', 'பறக', 'மலம',
         'ஆகவே', 'அதுதான்', 'என்றால்', 'என்ன', 'என்னா',
         'ஆனலம', 'அதானலம', 'இல்ல', 'இல்லன்னா',
     ]
-    
-    # Step 3: Split on sentence delimiters first
-    # Tamil has same punctuation as English: . ? ! : ;
-    delimiter_pattern = r'([.?!:;]+)'
+
+    # Step 3: Split on sentence delimiters and commas
+    delimiter_pattern = r'([.?!:;,]+)'
     segments = re.split(delimiter_pattern, cleaned_text)
-    
+
     # Recombine segments with their delimiters
     combined_segments = []
     i = 0
     while i < len(segments):
         seg = segments[i].strip()
         if seg:
-            # If next segment is delimiter, attach it
             if i + 1 < len(segments) and re.match(delimiter_pattern, segments[i + 1]):
                 seg += segments[i + 1]
                 i += 2
@@ -98,76 +90,67 @@ def split_into_utterances_tamil(text: str, debug: bool = False) -> List[str]:
             combined_segments.append(seg)
         else:
             i += 1
-    
+
     if debug:
         print(f"[UTTERANCE SPLIT] After delimiter split: {combined_segments}")
-    
+
     # Step 4: Further split on Tamil conjunctions
     utterances = []
     for segment in combined_segments:
-        # Try to split on conjunctions
         temp_utterances = [segment]
-        
         for conjunction in tamil_conjunctions:
             new_temp = []
             for utt in temp_utterances:
-                # Check if conjunction exists in this utterance
                 if conjunction in utt:
-                    # Split before the conjunction
                     parts = utt.split(conjunction)
-                    
                     for i, part in enumerate(parts):
                         part = part.strip()
                         if not part:
                             continue
-                        
-                        # Add the part before conjunction
-                        if i < len(parts) - 1:
-                            # Not the last part - conjunction comes after
-                            new_temp.append(part)
-                        else:
-                            # Last part - no conjunction after
-                            new_temp.append(part)
+                        new_temp.append(part)
                 else:
-                    # No conjunction found, keep as is
                     new_temp.append(utt)
-            
             temp_utterances = new_temp
-        
         utterances.extend(temp_utterances)
-    
+
     if debug:
         print(f"[UTTERANCE SPLIT] After conjunction split: {utterances}")
-    
-    # Step 5: Filter out fragments shorter than 3 words (unless punctuation ends it)
+
+    # Step 5: Chunk very long utterances into smaller ones (max_words)
+    max_words = 20
+    chunked_utterances = []
+    for seg in utterances:
+        words = seg.split()
+        if len(words) <= max_words:
+            chunked_utterances.append(seg)
+        else:
+            for i in range(0, len(words), max_words):
+                chunk = ' '.join(words[i:i + max_words]).strip()
+                if chunk:
+                    chunked_utterances.append(chunk)
+
+    # Step 6: Filter out fragments shorter than 2 words (unless punctuation ends it)
     filtered_utterances = []
-    for utt in utterances:
+    for utt in chunked_utterances:
         utt = utt.strip()
         if not utt:
             continue
-        
-        # Count words (Tamil or English)
         words = utt.split()
-        
-        # Keep if:
-        # - Has 3+ words, OR
-        # - Ends with punctuation (meaningful short utterance)
-        if len(words) >= 3 or re.search(r'[.?!;:]$', utt):
+        if len(words) >= 2 or re.search(r'[.?!;:,]$', utt):
             filtered_utterances.append(utt)
         elif debug:
             print(f"[UTTERANCE SPLIT] Filtered out (too short): '{utt}'")
-    
-    # Step 6: Final cleanup - normalize whitespace
+
+    # Step 7: Final cleanup - normalize whitespace
     final_utterances = []
     for utt in filtered_utterances:
-        # Normalize whitespace
         utt = re.sub(r'\s+', ' ', utt).strip()
         if utt:
             final_utterances.append(utt)
-    
+
     if debug:
         print(f"[UTTERANCE SPLIT] Final {len(final_utterances)} utterances: {final_utterances}")
-    
+
     return final_utterances
 
 

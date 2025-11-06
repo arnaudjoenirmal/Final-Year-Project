@@ -10,3 +10,4 @@ rapidfuzz
 sentence-transformers
 torch
 transformers
+scikit-learn

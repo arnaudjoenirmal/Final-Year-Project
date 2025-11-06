@@ -205,3 +205,25 @@ def per_token_vad(text, func=get_vad_from_tamil, prebatch=True):
     return out
 
 
+def analyze_vad_text(text):
+    """Wrapper function for compatibility with tdata.py
+    
+    Returns a single dict with averaged VAD scores for the entire text.
+    """
+    results = aggregate_vad(text, get_vad_from_tamil, prebatch=True)
+    
+    if not results:
+        return None
+    
+    # Average all sentence VAD scores
+    avg_valence = sum(r["valence"] for r in results) / len(results)
+    avg_arousal = sum(r["arousal"] for r in results) / len(results)
+    avg_dominance = sum(r["dominance"] for r in results) / len(results)
+    
+    return {
+        "valence": avg_valence,
+        "arousal": avg_arousal,
+        "dominance": avg_dominance
+    }
+
+

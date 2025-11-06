@@ -5,3 +5,4 @@ venv/
 venv/bin/
 backEnd/bin/
 tamil_pipeline.log
+vad_bert_model.pt

@@ -54,10 +54,24 @@ app.add_middleware(
 
 # Initialize PHQ-9 analyzer (do this once at startup)
 try:
-    phq9_analyzer = SemanticPHQ9Analyzer()
+    # Get the correct path to phq_templates.json
+    BACKEND_DIR = os.path.dirname(os.path.abspath(__file__))
+    PHQ_TEMPLATES_PATH = os.path.join(BACKEND_DIR, 'phq', 'phq_templates.json')
+    
+    # Verify the file exists
+    if not os.path.exists(PHQ_TEMPLATES_PATH):
+        logger.error(f"PHQ-9 templates file not found at: {PHQ_TEMPLATES_PATH}")
+        logger.error(f"Current working directory: {os.getcwd()}")
+        logger.error(f"Backend directory: {BACKEND_DIR}")
+        raise FileNotFoundError(f"phq_templates.json not found")
+    
+    logger.info(f"Loading PHQ-9 analyzer from: {PHQ_TEMPLATES_PATH}")
+    phq9_analyzer = SemanticPHQ9Analyzer(templates_path=PHQ_TEMPLATES_PATH)
     logger.info("PHQ-9 analyzer initialized successfully")
 except Exception as e:
     logger.error(f"Failed to initialize PHQ-9 analyzer: {e}")
+    import traceback
+    logger.error(traceback.format_exc())
     phq9_analyzer = None
 
 def pretty_json_response(data):
@@ -88,14 +102,7 @@ async def crawl_and_process(url: str = Form(None),
                            apply_corrections: bool = Form(True),
                            use_pipeline: bool = Form(True),
                            debug: bool = Form(False)):
-    """Crawl reddit by URL, return cleaned text, VAD per sentence, and transliteration samples.
-    
-    Args:
-        url: Reddit URL to crawl
-        apply_corrections: If True, apply dictionary-based corrections to transliteration (default: True)
-        use_pipeline: If True, use unified pipeline with English translation (default: True)
-        debug: If True, print detailed processing steps (default: False)
-    """
+    """Crawl reddit by URL, return cleaned text, VAD per sentence, and transliteration samples."""
     start_time = time.time()
     request_id = f"crawl_{int(time.time() * 1000)}"
     
@@ -113,9 +120,20 @@ async def crawl_and_process(url: str = Form(None),
     fetch_time = time.time() - fetch_start
     logger.info(f"[{request_id}] Reddit fetch completed in {fetch_time:.2f}s - {len(submission['comments'])} comments")
 
-    # combine post body and all comments into one text blob
-    texts = []
+    # Store ORIGINAL text for PHQ-9 analysis (before transliteration)
+    original_texts = []
     post_body = submission["post"].get("body", "")
+    if post_body:
+        original_texts.append(post_body)
+    for c in submission["comments"]:
+        b = c.get("body")
+        if b:
+            original_texts.append(b)
+
+    combined_original_text = "\n".join(original_texts)
+    
+    # combine for transliteration/VAD processing
+    texts = []
     if post_body:
         texts.append(post_body)
     for c in submission["comments"]:
@@ -131,7 +149,6 @@ async def crawl_and_process(url: str = Form(None),
     process_start = time.time()
     logger.info(f"[{request_id}] Starting text processing (pipeline={use_pipeline})...")
     
-    # Use unified pipeline or legacy transliteration
     if use_pipeline:
         translit, metadata = clean_tamil_pipeline(
             combined_text,
@@ -140,10 +157,8 @@ async def crawl_and_process(url: str = Form(None),
             debug=debug
         )
     else:
-        # Legacy: transliteration: convert the raw combined text from tanglish to tamil
         translit = tanglish_to_tamil(combined_text)
         
-        # Optionally correct transliteration using dictionary matching
         if apply_corrections:
             corrected_translit, _ = correct_transliteration_tokens(translit, debug=False)
             translit = corrected_translit
@@ -155,47 +170,43 @@ async def crawl_and_process(url: str = Form(None),
     vad_start = time.time()
     logger.info(f"[{request_id}] Computing VAD scores...")
     vad_results = aggregate_vad(translit, get_vad_from_tamil)
-    # Add this debug statement:
-    logger.info(f"[{request_id}] VAD results type: {type(vad_results)}, length: {len(vad_results) if isinstance(vad_results, list) else 'N/A'}")
-    if isinstance(vad_results, list) and len(vad_results) > 0:
-        logger.info(f"[{request_id}] First VAD result: {vad_results[0]}")
     vad_time = time.time() - vad_start
     logger.info(f"[{request_id}] VAD computation completed in {vad_time:.2f}s")
 
-    # Add PHQ-9 analysis if analyzer is available
+    # Step 4: PHQ-9 analysis using ORIGINAL text (not transliterated)
     phq9_data = None
-    if phq9_analyzer and vad_results:
+    if phq9_analyzer and original_texts:
         try:
-            # Extract sentences from VAD results
-            utterances_for_phq9 = [item['sentence'] for item in vad_results]
+            logger.info(f"[{request_id}] Computing PHQ-9 scores from {len(original_texts)} original utterances...")
+            phq9_start = time.time()
             
-            if utterances_for_phq9:
-                logger.info(f"[{request_id}] Computing PHQ-9 scores...")
-                phq9_start = time.time()
-                
-                phq9_scores = phq9_analyzer.analyze_utterances(
-                    utterances_for_phq9,
-                    normalize=True,
-                    phq_scale=False
-                )
-                
-                phq9_total = phq9_analyzer.get_phq9_total(phq9_scores)
-                phq9_severity = phq9_analyzer.interpret_severity(phq9_total, phq_scale=False)
-                phq9_radar = phq9_analyzer.get_radar_data(phq9_scores)
-                
-                phq9_time = time.time() - phq9_start
-                
-                phq9_data = {
-                    "scores": phq9_scores,
-                    "total": phq9_total,
-                    "severity": phq9_severity,
-                    "radar_data": phq9_radar,
-                    "processing_time_seconds": round(phq9_time, 3)
-                }
-                
-                logger.info(f"[{request_id}] PHQ-9 analysis completed: {phq9_severity} ({phq9_total:.2f})")
+            # Use ORIGINAL text, not transliterated
+            phq9_scores = phq9_analyzer.analyze_utterances(
+                original_texts,  # Changed from utterances_for_phq9
+                normalize=True,
+                phq_scale=False
+            )
+            
+            phq9_total = phq9_analyzer.get_phq9_total(phq9_scores)
+            phq9_severity = phq9_analyzer.interpret_severity(phq9_total, phq_scale=False)
+            phq9_radar = phq9_analyzer.get_radar_data(phq9_scores)
+            
+            phq9_time = time.time() - phq9_start
+            
+            phq9_data = {
+                "scores": phq9_scores,
+                "total": phq9_total,
+                "severity": phq9_severity,
+                "radar_data": phq9_radar,
+                "processing_time_seconds": round(phq9_time, 3)
+            }
+            
+            logger.info(f"[{request_id}] PHQ-9 analysis completed: {phq9_severity} ({phq9_total:.2f})")
         except Exception as e:
             logger.error(f"[{request_id}] PHQ-9 analysis failed: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            phq9_data = None
 
     total_time = time.time() - start_time
     logger.info(f"[{request_id}] Total request completed in {total_time:.2f}s")
@@ -221,19 +232,15 @@ async def crawl_and_process(url: str = Form(None),
         }
     }
     
-    # After processing text and getting metadata
+    # Handle utterances
     if use_pipeline and metadata.get('utterances'):
         utterances = metadata['utterances']
-        # Compute VAD for each utterance individually:
         vad_results = [aggregate_vad(utt, get_vad_from_tamil, prebatch=True)[0] for utt in utterances]
-
-        # Add utterances and VAD results to your response:
         result["vad"] = vad_results
         result["utterances"] = utterances
         result["utterance_count"] = len(utterances)
         logger.info(f"[{request_id}] Generated {len(utterances)} utterances")
     else:
-        # Fallback: treat the whole text as one utterance
         utterances = [translit]
         vad_results = aggregate_vad(translit, get_vad_from_tamil, prebatch=True)
         result["vad"] = vad_results
@@ -249,14 +256,7 @@ async def upload_file(file: UploadFile = File(...),
                      apply_corrections: bool = Form(True),
                      use_pipeline: bool = Form(True),
                      debug: bool = Form(False)):
-    """Accepts uploaded CSV/ TXT with a column named 'body' or plain text. Processes similarly to /crawl.
-    
-    Args:
-        file: Uploaded file (CSV or text)
-        apply_corrections: If True, apply dictionary-based corrections to transliteration (default: True)
-        use_pipeline: If True, use unified pipeline with English translation (default: True)
-        debug: If True, print detailed processing steps (default: False)
-    """
+    """Accepts uploaded CSV/TXT with a column named 'body' or plain text."""
     start_time = time.time()
     request_id = f"upload_{int(time.time() * 1000)}"
     
@@ -267,6 +267,7 @@ async def upload_file(file: UploadFile = File(...),
     read_start = time.time()
     content = await file.read()
     text = ""
+    original_text = ""  # Store original for PHQ-9
     name = file.filename.lower()
     
     if name.endswith('.csv'):
@@ -274,11 +275,12 @@ async def upload_file(file: UploadFile = File(...),
             df = pd.read_csv(io.BytesIO(content))
             if 'body' in df.columns:
                 text = "\n".join(df['body'].dropna().astype(str).tolist())
+                original_text = text  # Keep original
             else:
-                # try first text column
                 text = df.iloc[:,0].dropna().astype(str).tolist()
                 if isinstance(text, list):
-                    text = "\n".join(text)
+                    original_text = "\n".join(text)
+                    text = original_text
             logger.info(f"[{request_id}] Parsed CSV with {len(df)} rows")
         except Exception as e:
             logger.error(f"[{request_id}] CSV parsing failed: {e}")
@@ -286,8 +288,10 @@ async def upload_file(file: UploadFile = File(...),
     else:
         try:
             text = content.decode('utf-8')
+            original_text = text  # Keep original
         except Exception:
             text = content.decode('latin-1', errors='ignore')
+            original_text = text
     
     read_time = time.time() - read_start
     logger.info(f"[{request_id}] File read completed in {read_time:.2f}s - {len(text)} characters")
@@ -300,7 +304,6 @@ async def upload_file(file: UploadFile = File(...),
     process_start = time.time()
     logger.info(f"[{request_id}] Starting text processing (pipeline={use_pipeline})...")
     
-    # Use unified pipeline or legacy mode
     if use_pipeline:
         translit, metadata = clean_tamil_pipeline(
             text,
@@ -313,14 +316,12 @@ async def upload_file(file: UploadFile = File(...),
             if step['step'] == 'dictionary_correction':
                 correction_info = step.get('corrections', [])
     else:
-        # Legacy: if input already contains Tamil characters, skip transliteration
         if contains_tamil(text):
             translit = text
             correction_info = []
         else:
             translit = tanglish_to_tamil(text)
             
-            # Optionally correct transliteration using dictionary matching
             if apply_corrections:
                 corrected_translit, correction_info = correct_transliteration_tokens(translit, debug=False)
                 translit = corrected_translit
@@ -338,19 +339,20 @@ async def upload_file(file: UploadFile = File(...),
     vad_time = time.time() - vad_start
     logger.info(f"[{request_id}] VAD computation completed in {vad_time:.2f}s - {len(tokens)} tokens")
 
-    # PHQ-9 analysis
+    # Step 4: PHQ-9 analysis using ORIGINAL text
     phq9_data = None
-    if phq9_analyzer and vad_results:
+    if phq9_analyzer and original_text:
         try:
-            # Extract sentences from VAD results
-            utterances_for_phq9 = [item['sentence'] for item in vad_results]
+            # Split original text into sentences/utterances
+            original_utterances = [s.strip() for s in original_text.split('\n') if s.strip()]
             
-            if utterances_for_phq9:
-                logger.info(f"[{request_id}] Computing PHQ-9 scores...")
+            if original_utterances:
+                logger.info(f"[{request_id}] Computing PHQ-9 scores from {len(original_utterances)} original utterances...")
                 phq9_start = time.time()
                 
+                # Use ORIGINAL text, not transliterated
                 phq9_scores = phq9_analyzer.analyze_utterances(
-                    utterances_for_phq9,
+                    original_utterances,
                     normalize=True,
                     phq_scale=False
                 )
@@ -372,6 +374,9 @@ async def upload_file(file: UploadFile = File(...),
                 logger.info(f"[{request_id}] PHQ-9 analysis completed: {phq9_severity} ({phq9_total:.2f})")
         except Exception as e:
             logger.error(f"[{request_id}] PHQ-9 analysis failed: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            phq9_data = None
 
     total_time = time.time() - start_time
     logger.info(f"[{request_id}] Total request completed in {total_time:.2f}s")

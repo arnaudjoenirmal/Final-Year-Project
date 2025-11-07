@@ -60,6 +60,24 @@ VOWELS = {
     'o': 'ஒ',
 }
 
+# Add smart fallback translations for English words (semantic layer)
+ENGLISH_FALLBACK = {
+    'i_am': 'நான்',
+    'i_have': 'நான்',
+    'i_would': 'நான்',
+    'moved': 'நகர்ந்தேன்',
+    'move': 'நகரு',
+    'new': 'புதிய',
+    'city': 'நகரம்',
+    'from': 'இருந்து',
+    'to': 'க்கு',
+    'in': 'இல்',
+    'am': 'ஆகிறேன்',
+    'was': 'இருந்தேன்',
+    'at': 'இல்',
+}
+
+
 # Common word mappings for better accuracy
 COMMON_WORDS = {
     'vanakam': 'வணக்கம்',
@@ -76,6 +94,14 @@ COMMON_WORDS = {
     'entha': 'என்த',
     'naan': 'நான்',
     'nan': 'நான்',
+    'i': 'நான்',
+    "i'm": 'நான்',
+    "i’m": 'நான்',
+    "i've": 'நான்',
+    "i’d": 'நான்',
+    "i_am": 'நான்',
+    "i'd": 'நான்',
+    'naanu': 'நான்',
     'neengal': 'நீங்கள்',
     'neenga': 'நீங்க',
     'thambi': 'தம்பி',
@@ -101,48 +127,47 @@ COMMON_WORDS = {
 
 
 def tanglish_to_tamil(text, verbose: bool = False):
-    """Improved transliteration with contextual vowel handling and common word mappings.
-    
-    Args:
-        text: Tanglish input text
-        verbose: Enable debug output
-        
-    Returns:
-        Tamil text with properly combined consonant-vowel sequences
-    """
+    """Improved transliteration with contextual vowel handling and common word mappings."""
     text = text.lower().strip()
-    
-    # First pass: process by words to catch common patterns
+
+    text = text.replace("i'm", "i_am").replace("i’ve", "i_have").replace("i’d", "i_would")
+    text = re.sub(r"\b([a-z])['’`‘]([a-z]+)\b", r"\1 \2", text)
+
     words = []
     current_word = ""
-    
     for ch in text:
         if re.match(r'[a-z0-9]', ch):
             current_word += ch
         else:
+            if ch in ["'", "’", "‘", "`"]:
+                if current_word:
+                    if current_word in COMMON_WORDS:
+                        words.append(COMMON_WORDS[current_word])
+                    else:
+                        words.append(_transliterate_word(current_word, verbose))
+                    current_word = ""
+                continue  # Do not add space for apostrophe
             if current_word:
-                # Check if it's a common word
                 if current_word in COMMON_WORDS:
                     words.append(COMMON_WORDS[current_word])
                 else:
-                    # Transliterate using rules
                     words.append(_transliterate_word(current_word, verbose))
                 current_word = ""
             # Keep separators as single space
             if words and not words[-1].endswith(' '):
                 words.append(' ')
-    
-    # Don't forget the last word
     if current_word:
         if current_word in COMMON_WORDS:
             words.append(COMMON_WORDS[current_word])
+        elif current_word in ENGLISH_FALLBACK:
+            words.append(ENGLISH_FALLBACK[current_word])
+        elif re.fullmatch(r'[0-9]+[a-zA-Z]*', current_word):
+            words.append(current_word)  # keep things like 23F as-is
         else:
             words.append(_transliterate_word(current_word, verbose))
-    
+
     result = ''.join(words).strip()
-    # Clean up multiple spaces
     result = re.sub(r'\s+', ' ', result)
-    
     return result
 
 
@@ -226,7 +251,7 @@ def find_rule_for_key(key):
     return 'unknown'
 
 # Load Tamil dictionary for correction
-file_path = os.path.join(os.path.dirname(__file__), "tamil_words_9k_sorted.txt")
+file_path = os.path.join(os.path.dirname(__file__), "tamil_dic_cleaned.txt")
 TAMIL_DICTIONARY = []
 try:
     with open(file_path, "r", encoding="utf-8") as f:

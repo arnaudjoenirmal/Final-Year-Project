@@ -180,12 +180,10 @@ export default function DepressionInsightDashboard({ crawlData, uploadedData }: 
   // Extract all utterances for PHQ-9 analysis
   const getAllUtterances = (): string[] => {
     const utterances: string[] = [];
-    
     // From crawl data
     if (crawlData?.vad) {
       utterances.push(...crawlData.vad.map(v => v.sentence));
     }
-    
     // From uploaded files
     if (uploadedData) {
       uploadedData.forEach(data => {
@@ -194,13 +192,31 @@ export default function DepressionInsightDashboard({ crawlData, uploadedData }: 
         }
       });
     }
-    
+    return utterances.filter(u => u && u.trim().length > 0);
+  };
+
+  // Extract original utterances for PHQ-9 analysis
+  const getAllOriginalUtterances = (): string[] => {
+    const utterances: string[] = [];
+    // For crawlData, use the original post body
+    if (crawlData?.post?.body) {
+      utterances.push(crawlData.post.body);
+    }
+    // If you want to include comments, add them here if available in crawlData
+    // For uploadedData, if your backend includes original_utterances, use them:
+    if (uploadedData) {
+      uploadedData.forEach(data => {
+        if ((data as any).original_utterances) {
+          utterances.push(...((data as any).original_utterances as string[]));
+        }
+      });
+    }
     return utterances.filter(u => u && u.trim().length > 0);
   };
 
   // Auto-analyze PHQ-9 on component mount if data is available
   useEffect(() => {
-    const utterances = getAllUtterances();
+    const utterances = getAllOriginalUtterances();
     if (utterances.length > 0 && !phq9Result && !phq9Loading) {
       console.log('[Dashboard] Auto-analyzing PHQ-9 scores...');
       analyzePHQ9(utterances);

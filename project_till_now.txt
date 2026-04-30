@@ -1,0 +1,214 @@
+Project: Final-Year-Project — Project Summary (till now)
+
+Overview:
+- This repository implements a Tamil/English mental-health analysis system with a React frontend and a Python backend. The project collects and processes Reddit data, uses language-specific pipelines for Tamil (including Tanglish mapping), provides a PHQ-9 analyzer, and contains voice activity detection (VAD) utilities. There is a local dataset and a saved VAD model for offline use.
+
+Top-level structure:
+- `BackEnd/` — Python backend, data, models, crawlers, and utilities.
+- `Frontend/` — React + TypeScript single-page app (Vite) for the UI and analyzer frontend.
+- `Levenstein/` — small helper for string distance operations.
+- `Web Scraping/` — raw scraping scripts and cleaned text / CSV outputs.
+
+Detailed contents and roles
+
+BackEnd/ (core backend and data processing)
+- `app.py` — main web application entrypoint (likely Flask or FastAPI). Exposes endpoints for analysis. There is also an `openapi.json` present indicating documented API definitions.
+- `openapi.json` — API schema for the backend.
+- `requirements.txt` — Python dependencies for the backend.
+- `how_to_run.txt` — usage notes and run instructions (read this first before running backend).
+
+- Data files (preprocessed / cleaned):
+  - `cleaned.csv`, `cleaned1.csv`, `cleaned2.csv`, `cleaned3.csv`, `cleaned4.csv`, `cleaned5.csv` — cleaned textual datasets (probably from Reddit posts/comments across different scraping runs).
+  - `english_anew.csv` — affective norms for English words (ANEW lexicon), used for sentiment/valence/arousal computations.
+  - `Tamil_anew_combined.json` — Tamil-specific affective lexicon (combined ANEW-style data for Tamil).
+  - `tamil_dic_cleaned.txt`, `tamil_words_9k_sorted.txt`, `tamil.txt` — Tamil word lists and dictionaries, used for tokenization, normalization, and lookup.
+  - `tanglish_to_tamil.json` — mapping from Tanglish (romanized Tamil) to Tamil script.
+
+- Language & pipeline utilities:
+  - `language_detector.py` — language identification utilities (detects Tamil vs English / Tanglish likely used to route text through appropriate pipeline).
+  - `tanglish_to_tamil.py` — converts Tanglish sequences into Tamil using the provided mapping.
+  - `tamil_pipeline.py` — the processing pipeline for Tamil text (tokenization, normalization, lexicon lookups, scoring, maybe transliteration handling).
+  - `tdata.py` — data utilities: reading, cleaning, feature extraction helpers used across training and inference.
+
+- Model training and evaluation:
+  - `ttrain.py` — model training code (likely trains classifiers or regressors on the prepared features, possibly for PHQ-9 or depression detection tasks).
+  - `test_pipeline_utterances.py` — unit-like or smoke tests for pipeline on example utterances.
+
+- VAD (voice activity detection):
+  - `vad.py` — code for voice activity detection, possibly wrapper around PyTorch model.
+  - `vad_bert_model.pt` — trained model weights for VAD (PyTorch .pt file) used by `vad.py` for detecting speech segments.
+
+- Crawlers and data collection:
+  - `reddit_crawler.py` — script used to crawl Reddit posts/comments and produce raw or cleaned data (the datasets folder contains CSVs indicating multiple collection runs).
+
+- PHQ / clinical analysis:
+  - `phq/` directory:
+    - `phq_templates.json` — templates used to map or detect PHQ question/answers or typical phrases.
+    - `semantic_phq9_analyzer.py` — a semantic analyzer that computes PHQ-9-style scores from text, likely embedding-based or lexicon-based.
+
+- Other utilities and experiments:
+  - `gemini-api.py` — integration helper for a language model API (likely for experiments or generating labels/augmentations; the exact API should be checked before use).
+  - `rules.json` — rule definitions (heuristics used by the pipeline or analyzer).
+
+- `datasets/` subfolder:
+  - Contains produced CSV datasets from multiple collection/cleaning runs, such as `reddit_tamil_vad_dataset.csv`, and several `vad_cleaned*.csv` versions and an `uploaded_tamil_vad_dataset_20251106_1153.csv`. These are used for training/evaluation and for dataset republishing.
+
+Frontend/ (React + TypeScript)
+- Project is a Vite React TypeScript app. It provides UI for user login, analysis, and results dashboard.
+- Key files:
+  - `index.html`, `vite.config.ts`, `package.json` — standard Vite project config.
+  - `src/main.tsx` — app entry.
+  - `src/App.tsx`, `src/App.css` — main application component.
+
+- Key directories/components:
+  - `src/Analyzer/Analyzer.tsx` — main analysis UI component that likely sends text/audio to backend for processing and displays results.
+  - `src/hooks/usePHQ9Analyzer.ts` — custom hook that encapsulates PHQ-9 analysis logic, request/response with backend endpoints, and state management for analysis results.
+  - `src/Login/` — `Login.tsx`, `Intro.tsx`, and `LoginRegisterForm.tsx` implement authentication UI and flows.
+  - `src/Results/` — `Results.tsx`, `DepressionInsightDashboard.tsx` display the analysis results, dashboards, and visualizations for depression insights.
+  - `src/components/` — many visual and decorative components (Aurora, Particles, Prism, etc.) used for UI polish and animations.
+  - `src/lib/utils.ts` — utility functions used across frontend components.
+
+Levenstein/
+- `Levenstein.py` — small script to compute Levenshtein (edit) distance; used for fuzzy matching between words or for normalizing noisy text (maybe for mapping tanglish variants).
+- `ta_words_sorted.txt` — Tamil words used by this script.
+
+Web Scraping/
+- Raw scraping code and cleaned text artifacts.
+- Contains multiple `postN/` directories with `cleanedN.txt` and CSVs of post and comments. These are the raw input sources that feed `BackEnd/cleaned*.csv` after cleaning.
+- `combine.py` — helper that merges multiple cleaned files or outputs into single datasets.
+- `reddit_crawler.py` — the main crawler script used to fetch Reddit posts/comments.
+
+What the project does (functionality summary):
+1. **Data Collection**: Collects textual data from Reddit (English + Tamil posts and comments) using `reddit_crawler.py` and the scripts under `Web Scraping/`.
+
+2. **Data Cleaning & Preprocessing**: Cleans and normalizes text (several `cleaned*.csv` files store cleaned datasets from multiple scraping runs).
+
+3. **Language Detection & Processing**: 
+   - Detects language using `language_detector.py` (Tamil vs English vs Tanglish)
+   - Handles Tanglish (romanized Tamil) conversion using `tanglish_to_tamil.py` and `tanglish_to_tamil.json` mapping
+
+4. **Tamil Text Processing Pipeline**:
+   - Processes Tamil text using `tamil_pipeline.py`
+   - Uses Tamil lexicons (`Tamil_anew_combined.json`, `tamil_dic_cleaned.txt`, `tamil_words_9k_sorted.txt`) 
+   - Computes affective scores and features (valence/arousal/dominance metrics similar to ANEW)
+
+5. **English Text Processing**:
+   - Uses `english_anew.csv` for English affective norms
+   - Computes similar sentiment/emotion metrics for English text
+
+6. **PHQ-9 Analysis**:
+   - Performs PHQ-9 style semantic analysis via `phq/semantic_phq9_analyzer.py`
+   - Converts free text into PHQ-9-like depression screening scores
+   - Uses `phq_templates.json` to match typical depression-related phrases and patterns
+
+7. **Voice Activity Detection (VAD)**:
+   - Provides VAD functionality via `vad.py` with a saved model (`vad_bert_model.pt`)
+   - Detects speech segments when audio processing is required
+
+8. **Model Training**:
+   - `ttrain.py` trains models on the prepared features for depression detection or PHQ-9 prediction
+   - Uses collected and cleaned datasets from the `datasets/` folder
+
+9. **Backend API**:
+   - Exposes REST API endpoints via `app.py` (Flask or FastAPI)
+   - API schema documented in `openapi.json`
+   - Frontend communicates with backend to submit text/audio and retrieve analysis results
+
+10. **Frontend User Interface**:
+    - Provides web UI for user login/registration
+    - Analyzer interface for submitting text or audio input
+    - Results dashboard displaying PHQ-9 scores and depression insights with visualizations
+    - Polished UI with animations and visual components
+
+Important files to read first when running / developing:
+- `BackEnd/how_to_run.txt` — step-by-step run instructions for backend
+- `BackEnd/requirements.txt` — Python dependencies list
+- `Frontend/package.json` — JavaScript dependencies and npm scripts
+- `BackEnd/app.py` — main application entry point
+- `BackEnd/openapi.json` — API documentation and endpoint definitions
+
+Quick run hints (developer checklist):
+
+Backend (Windows PowerShell):
+1. Create and activate a virtual environment:
+   ```powershell
+   cd BackEnd
+   python -m venv .venv
+   .\.venv\Scripts\Activate.ps1
+   ```
+
+2. Install dependencies:
+   ```powershell
+   pip install -r requirements.txt
+   ```
+
+3. Run the backend:
+   ```powershell
+   python app.py
+   ```
+   (Or follow specific instructions in `how_to_run.txt`)
+
+Frontend:
+1. Navigate to Frontend directory and install dependencies:
+   ```powershell
+   cd Frontend
+   npm install
+   ```
+
+2. Start development server:
+   ```powershell
+   npm run dev
+   ```
+   (The Vite dev server will start, typically on http://localhost:5173)
+
+3. Build for production:
+   ```powershell
+   npm run build
+   ```
+
+Important notes:
+- The frontend calls backend endpoints described in `BackEnd/openapi.json`
+- Check CORS settings in backend to allow frontend origin
+- Verify base URL settings in frontend code (likely in `usePHQ9Analyzer.ts` hook)
+
+Known artifacts, models, and data:
+- `BackEnd/vad_bert_model.pt` — PyTorch model file (~several MB), requires correct PyTorch environment
+- Multiple `cleaned*.csv` files — cleaned Reddit datasets from various collection runs
+- `BackEnd/datasets/` — contains training/evaluation datasets with VAD annotations
+- `Tamil_anew_combined.json` — Tamil affective lexicon (critical for Tamil analysis)
+- `tanglish_to_tamil.json` — romanization mapping (critical for Tanglish support)
+
+Technology stack:
+- **Backend**: Python (likely Flask or FastAPI), PyTorch, NLP libraries
+- **Frontend**: React, TypeScript, Vite build tool
+- **Data sources**: Reddit API (via PRAW or similar)
+- **Models**: Custom VAD model, possibly transformer-based for text analysis
+- **Languages supported**: English, Tamil (native script), Tanglish (romanized Tamil)
+
+Potential next steps / enhancements:
+1. Verify exact backend framework (Flask vs FastAPI) by inspecting `app.py`
+2. Add comprehensive README with architecture diagram
+3. Document API endpoints with example requests/responses
+4. Add test suite with example inputs and expected outputs
+5. Consider containerization (Docker) for easier deployment
+6. Add CI/CD pipeline for automated testing
+7. Document the PHQ-9 scoring algorithm and validation metrics
+8. Add data versioning for datasets in `datasets/` folder
+
+Development workflow:
+1. Web scraping scripts collect raw Reddit data → `Web Scraping/` folder
+2. Data cleaning produces `cleaned*.csv` files → stored in `BackEnd/`
+3. Datasets are further processed and annotated → stored in `BackEnd/datasets/`
+4. Models are trained using `ttrain.py` → produces model files like `vad_bert_model.pt`
+5. Backend API (`app.py`) loads models and serves predictions
+6. Frontend submits user input to API and displays results
+
+Key features:
+- Bilingual support (English + Tamil + Tanglish)
+- Depression screening via PHQ-9 analysis
+- Sentiment/affective analysis using ANEW-style lexicons
+- User-friendly web interface with login/auth
+- Visual dashboards for results presentation
+
+
+End of summary.
